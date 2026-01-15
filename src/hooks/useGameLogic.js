@@ -18,6 +18,17 @@ const SENTENCES = [
     "Two driven jocks help fax my big quiz."
 ];
 
+const CAPITAL_WORDS = [
+    "React", "JavaScript", "HTML", "CSS", "NodeJS", "Python", "Java", "Docker", "Alice", "Bob", "New York", "Paris", "London", "Google", "Amazon",
+    "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "January", "February", "March", "April", "May", "June", "Earth", "Mars", "Jupiter"
+];
+
+const PARAGRAPHS = [
+    "The quick brown fox jumps over the lazy dog. It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout.",
+    "In the world of software development, typing speed is a superpower. It allows you to translate thoughts into code with minimal friction.",
+    "Typing properly requires posture and patience. Keep your back straight, feet flat on the floor, and wrists elevated above the keyboard."
+];
+
 export const useGameLogic = (gameMode, difficulty = 'beginner') => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [isGameOver, setIsGameOver] = useState(false);
@@ -59,6 +70,29 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
         };
 
         switch (mode) {
+            case 'practice-capital':
+                return {
+                    ...baseConfig,
+                    type: 'practice-capital',
+                    wordList: CAPITAL_WORDS, // Use the new CAPITAL_WORDS list
+                    timeLimit: 0,
+                    showTimer: true
+                };
+            case 'practice-paragraph':
+                return {
+                    ...baseConfig,
+                    type: 'practice-paragraph',
+                    wordList: [], // Will load Paragraphs logic in reset
+                    timeLimit: 0,
+                    showTimer: true
+                };
+            case 'practice-word':
+                return {
+                    ...baseConfig,
+                    type: 'practice-word',
+                    wordList: isBeginner ? BEGINNER_WORDS : INTERMEDIATE_WORDS,
+                    timeLimit: 0
+                };
             case 'word-rain':
                 return {
                     ...baseConfig,
@@ -130,6 +164,9 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
 
         if (config.current.type === 'sentence') {
             setWords(SENTENCES[Math.floor(Math.random() * SENTENCES.length)].split(' '));
+        } else if (config.current.type === 'practice-paragraph') {
+            // Paragraph logic
+            setWords(PARAGRAPHS[Math.floor(Math.random() * PARAGRAPHS.length)].split(' '));
         } else {
             setWords(getRandomWords(50, config.current.wordList));
         }
@@ -181,12 +218,7 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
         clearInterval(timerRef.current);
         setIsPlaying(false);
         setIsGameOver(true);
-
-        // Calculate final rank
-        // Note: WPM is calculated dynamically in render usually, so we recalculate here or rely on state update
-        // We'll calculate it based on stats state since `wpm` derived constant isn't available inside this callback closure easily without dependence
-        // Ideally pass it in, but for now let's do a quick calc:
-        // Or wait for effect? Let's just calculate logic here.
+        // Rank calc happens in effect
     }, []);
 
     const handleInput = (e) => {
@@ -199,13 +231,9 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
         const currentTarget = words[currentWordIndex];
 
         // Combo Logic:
-        // If typing correctly character by character
         if (!isDelete && val.length > prevVal.length) {
             const charIndex = val.length - 1;
-            const expectedChar = currentTarget[charIndex] !== undefined ? currentTarget[charIndex] : ' ';
-
-            // Check if the newly typed char is correct (basic check, complex for mid-word)
-            // Actually, simplified: if the whole input currently matches prefix of word
+            // Check prefix
             if (currentTarget.startsWith(val.trim())) {
                 setCombo(prev => {
                     const next = prev + 1;
@@ -213,13 +241,8 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
                     return next;
                 });
             } else {
-                // Mistake made
                 setCombo(0);
             }
-        } else if (isDelete) {
-            // Deleting doesn't reset combo necessarily, but let's say it effectively pauses or resets if they corrected a mistake
-            // Simpler arcade rule: Backspace breaks combo? Or just mistake?
-            // Let's stick to: Mistake breaks combo above. Backspace is neutral but combo broken on the error itself.
         }
 
         // Word Completion
@@ -231,7 +254,7 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
                 setInputValue('');
 
                 if (currentWordIndex + 1 >= words.length) {
-                    if (config.current.type === 'sentence' || config.current.type === 'race') {
+                    if (config.current.type === 'sentence' || config.current.type === 'race' || config.current.type === 'practice-paragraph') {
                         endGame();
                     } else {
                         setWords(prev => [...prev, ...getRandomWords(10, config.current.wordList)]);
@@ -246,13 +269,13 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
                     correctChars: prev.correctChars + currentTarget.length + 1,
                     totalChars: prev.totalChars + currentTarget.length + 1
                 }));
-                // Combo Bonus for Word Completion?
+                // Combo Bonus
                 setCombo(prev => prev + 5);
                 advanceWord();
 
             } else {
                 // Mistake
-                setCombo(0); // Break combo
+                setCombo(0);
                 const targetChar = currentTarget[inputValue.length] || ' ';
                 setStats(prev => ({
                     ...prev,
