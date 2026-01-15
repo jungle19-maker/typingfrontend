@@ -14,7 +14,7 @@ const PracticeSession = () => {
     const {
         words, inputValue, handleInput, time, isPlaying, isGameOver,
         stats, startGame, resetGame, currentWordIndex, config,
-        lives, aiProgress, combo, maxCombo, rank, isLoading
+        lives, aiProgress, combo, maxCombo, rank, isLoading, fallingWords
     } = useGameLogic(mode, difficulty);
 
     // Auto-start
@@ -28,6 +28,12 @@ const PracticeSession = () => {
     const nextCharIndex = inputValue.length;
     const nextChar = currentWord[nextCharIndex] || ' ';
 
+    const inputRef = React.useRef(null);
+
+    const handleContainerClick = () => {
+        if (inputRef.current) inputRef.current.focus();
+    };
+
     if (isLoading) {
         return (
             <div className="practice-container premium-layout" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -40,7 +46,7 @@ const PracticeSession = () => {
     }
 
     return (
-        <div className="practice-container premium-layout">
+        <div className="practice-container premium-layout" onClick={handleContainerClick}>
             {/* Background Effects */}
             <div className="bg-glow-orb top-left"></div>
             <div className="bg-glow-orb bottom-right"></div>
@@ -114,6 +120,7 @@ const PracticeSession = () => {
                         )}
 
                         <input
+                            ref={inputRef}
                             type="text"
                             value={inputValue}
                             onChange={handleInput}
@@ -125,9 +132,18 @@ const PracticeSession = () => {
                         {/* Typing Area */}
                         <div className="typing-display-wrapper">
                             {mode === 'word-rain' ? (
-                                <div className="word-rain-view placeholder">
-                                    <h3>Constructing Atmosphere...</h3>
-                                    <p>(Rain Mode Visualization Coming Soon)</p>
+                                <div className="word-rain-view">
+                                    {fallingWords.map(w => (
+                                        <div
+                                            key={w.id}
+                                            className="falling-word"
+                                            style={{ left: `${w.x}%`, top: `${w.y}%` }}
+                                        >
+                                            <span className="rain-text matched">{w.typed}</span>
+                                            <span className="rain-text remaining">{w.text.slice(w.typed.length)}</span>
+                                        </div>
+                                    ))}
+                                    <div className="danger-zone-line"></div>
                                 </div>
                             ) : (
                                 <div className="word-stream-premium">
@@ -169,7 +185,7 @@ const PracticeSession = () => {
                 )}
             </main>
         </div>
-        
+
     );
 };
 
