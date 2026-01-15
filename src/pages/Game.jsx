@@ -1,111 +1,125 @@
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import { useGameLogic } from '../hooks/useGameLogic';
+const GAME_MODES = [
+    {
+        id: 'classic',
+        title: 'Classic',
+        description: 'Standard typing practice. Focus on accuracy and speed.',
+        color: 'linear-gradient(135deg, #00f2ea 0%, #00c6be 100%)',
+        levels: ['beginner', 'intermediate', 'advanced']
+    },
+    {
+        id: 'word-rain',
+        title: 'Word Rain',
+        description: 'Type falling words before they hit the bottom!',
+        color: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+        levels: ['beginner', 'intermediate', 'advanced']
+    },
+    {
+        id: 'sentence',
+        title: 'Sentence',
+        description: 'Practice with full sentences and punctuation.',
+        color: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+        levels: ['beginner', 'intermediate', 'advanced']
+    },
+    {
+        id: 'survival',
+        title: 'Survival',
+        description: 'Don\'t make mistakes! Lives are limited.',
+        color: 'linear-gradient(135deg, #ff0844 0%, #ffb199 100%)',
+        levels: ['beginner', 'intermediate', 'advanced']
+    },
+    {
+        id: 'race',
+        title: 'Race',
+        description: 'Compete against an AI opponent to the finish line.',
+        color: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+        levels: ['beginner', 'intermediate', 'advanced']
+    }
+];
 
 const Game = () => {
-    const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-    const mode = searchParams.get('mode') || 'classic';
-    const {
-        words, inputValue, handleInput, time, isPlaying, isGameOver,
-        stats, lives, aiProgress, startGame, resetGame, currentWordIndex, config
-    } = useGameLogic(mode);
 
-    // Format time mm:ss
-    const formatTime = (s) => {
-        const m = Math.floor(s / 60);
-        const sec = s % 60;
-        return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+    const handlePlayValue = (modeId, level) => {
+        navigate(`/practice-session?mode=${modeId}&difficulty=${level}`);
     };
 
-    // Calculate player progress for Race
-    const playerProgress = (currentWordIndex / words.length) * 100;
-
     return (
-        <div className="game-container">
-            <div className="game-header">
-                <span style={{ textTransform: 'capitalize', fontWeight: 'bold', fontSize: '1.5rem', color: 'var(--primary)' }}>
-                    {mode.replace('-', ' ')}
-                </span>
-                <div id="gameStatsDisplay">
-                    {config.showTimer && (
-                        <>Time: <span className="timer">{formatTime(time)}</span> | </>
-                    )}
-                    WPM: <span>{stats.wpm}</span> |
-                    Acc: <span>{stats.accuracy}%</span>
-                    {(mode === 'survival' || config.type === 'survival') && (
-                        <span style={{ marginLeft: '10px' }}>| Lives: <span style={{ color: 'var(--error)' }}>{lives}</span></span>
-                    )}
-                </div>
+        <div className="dashboard-container">
+            <div style={{ textAlign: 'center', marginBottom: '4rem', paddingTop: '2rem' }}>
+                <h1 style={{ color: 'var(--text-main)', marginBottom: '1rem', fontSize: '3rem', fontWeight: 800 }}>Game Modes</h1>
+                <p style={{ color: 'var(--text-muted)', fontSize: '1.2rem', maxWidth: '600px', margin: '0 auto' }}>
+                    Select a game mode to test your speed and accuracy.
+                </p>
             </div>
 
-            {mode === 'race' && (
-                <div style={{ width: '100%', marginBottom: '1rem', background: '#333', height: '10px', borderRadius: '5px', position: 'relative' }}>
-                    <div style={{ height: '100%', background: 'var(--primary)', width: `${playerProgress}%`, borderRadius: '5px', transition: 'width 0.2s' }}></div>
-                    <div style={{ height: '100%', background: 'var(--error)', width: `${aiProgress}%`, borderRadius: '5px', opacity: 0.7, position: 'absolute', top: 0, left: 0, transition: 'width 0.2s' }}></div>
-                </div>
-            )}
+            <div className="game-modes-grid">
+                {GAME_MODES.map(mode => (
+                    <div key={mode.id} className="game-mode-card" style={{
+                        background: 'var(--bg-card)',
+                        borderRadius: '20px',
+                        padding: '2rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        minHeight: '280px',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        border: '1px solid rgba(255,255,255,0.05)'
+                    }}>
+                        <div style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            height: '6px',
+                            background: mode.color
+                        }} />
 
-            <div className="game-area">
-                {!isPlaying && !isGameOver && (
-                    <div style={{ textAlign: 'center' }}>
-                        <h2 style={{ marginBottom: '1rem' }}>Ready?</h2>
-                        <button onClick={startGame} className="btn btn-primary">Start Game</button>
-                    </div>
-                )}
-
-                {isPlaying && (
-                    <>
-                        <div className="word-display" style={{
-                            maxHeight: '150px',
-                            overflow: 'hidden',
-                            display: 'flex',
-                            flexWrap: 'wrap',
-                            justifyContent: config.type === 'beginner' ? 'center' : 'flex-start'
-                        }}>
-                            {['sentence', 'intermediate', 'advanced', 'expert', 'elementary', 'classic'].includes(config.type) ? (
-                                // Render stream of words
-                                words.slice(currentWordIndex, currentWordIndex + 20).map((w, i) => (
-                                    <span key={i} className={i === 0 ? 'current' : ''} style={{
-                                        color: i === 0 ? 'var(--primary)' : 'var(--text-muted)',
-                                        borderBottom: i === 0 ? '2px solid var(--primary)' : 'none',
-                                        marginRight: '10px',
-                                        fontSize: i === 0 ? '1.5rem' : '1.2rem',
-                                        opacity: i === 0 ? 1 : 0.6
-                                    }}>
-                                        {w}
-                                    </span>
-                                ))
-                            ) : (
-                                // Beginner / Single word focus
-                                <span style={{ fontSize: '3rem', fontWeight: 'bold' }}>{words[currentWordIndex]}</span>
-                            )}
+                        <div>
+                            <h3 style={{ fontSize: '1.8rem', marginBottom: '0.5rem', color: 'var(--text-main)' }}>{mode.title}</h3>
+                            <p style={{ color: 'var(--text-muted)', marginBottom: '2rem', fontSize: '1rem' }}>{mode.description}</p>
                         </div>
 
-                        <input
-                            type="text"
-                            className="game-input"
-                            value={inputValue}
-                            onChange={handleInput}
-                            ref={input => input && input.focus()}
-                            placeholder="Type here..."
-                            style={{ marginTop: '2rem' }}
-                        />
-                    </>
-                )}
-
-                {isGameOver && (
-                    <div className="auth-box" style={{ textAlign: 'center' }}>
-                        <h2 style={{ color: 'var(--primary)' }}>Game Over!</h2>
-                        <p style={{ fontSize: '1.2rem', margin: '1rem 0' }}>
-                            You typed at <b>{stats.wpm} WPM</b> with <b>{stats.accuracy}%</b> accuracy.
-                        </p>
-                        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-                            <button onClick={() => { resetGame(); startGame(); }} className="btn btn-primary">Play Again</button>
-                            <button onClick={() => navigate('/practice')} className="btn btn-secondary">Back to Practice</button>
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: 'auto' }}>
+                            {mode.levels.map(level => (
+                                <button
+                                    key={level}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handlePlayValue(mode.id, level);
+                                    }}
+                                    className="btn"
+                                    style={{
+                                        flex: 1,
+                                        padding: '0.5rem',
+                                        fontSize: '0.8rem',
+                                        background: 'rgba(255,255,255,0.05)',
+                                        color: 'var(--text-muted)',
+                                        border: '1px solid rgba(255,255,255,0.1)',
+                                        borderRadius: '8px',
+                                        textTransform: 'capitalize',
+                                        whiteSpace: 'nowrap'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.target.style.background = mode.color;
+                                        e.target.style.color = '#000';
+                                        e.target.style.border = '1px solid transparent';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.target.style.background = 'rgba(255,255,255,0.05)';
+                                        e.target.style.color = 'var(--text-muted)';
+                                        e.target.style.border = '1px solid rgba(255,255,255,0.1)';
+                                    }}
+                                >
+                                    {level}
+                                </button>
+                            ))}
                         </div>
                     </div>
-                )}
+                ))}
             </div>
         </div>
     );

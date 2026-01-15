@@ -18,7 +18,7 @@ const SENTENCES = [
     "Two driven jocks help fax my big quiz."
 ];
 
-export const useGameLogic = (gameMode) => {
+export const useGameLogic = (gameMode, difficulty = 'beginner') => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [isGameOver, setIsGameOver] = useState(false);
     const [words, setWords] = useState([]);
@@ -34,45 +34,74 @@ export const useGameLogic = (gameMode) => {
         timeLimit: 60,
         type: 'classic',
         wordList: WORD_BANK,
-        allowErrors: false, // if false, can't proceed until corrected (strict) vs leniency
+        allowErrors: false,
         showTimer: true,
         penalty: false,
     });
 
     const timerRef = useRef(null);
 
-    // Setup configuration based on gameMode
-    const setupConfig = (mode) => {
+    // Setup configuration based on gameMode and difficulty
+    const setupConfig = (mode, diff) => {
+        const difficulty = diff || 'beginner';
+        const isBeginner = difficulty === 'beginner';
+        const isAdvanced = difficulty === 'advanced';
+
+        const baseConfig = {
+            timeLimit: isBeginner ? 0 : 60,
+            allowErrors: isBeginner, // Beginner allows errors, advanced blocks or penalizes
+            showTimer: !isBeginner,
+        };
+
         switch (mode) {
-            case 'beginner':
-                return { timeLimit: 0, type: 'beginner', wordList: BEGINNER_WORDS, allowErrors: true, showTimer: false, penalty: false };
-            case 'elementary':
-                return { timeLimit: 0, type: 'elementary', wordList: ELEMENTARY_WORDS, allowErrors: true, showTimer: false, penalty: false };
-            case 'intermediate':
-                return { timeLimit: 60, type: 'intermediate', wordList: INTERMEDIATE_WORDS, allowErrors: true, showTimer: true, penalty: false };
-            case 'advanced':
-                return { timeLimit: 60, type: 'advanced', wordList: ADVANCED_WORDS, allowErrors: true, showTimer: true, penalty: false };
-            case 'expert':
-                return { timeLimit: 0, type: 'expert', wordList: EXPERT_WORDS, allowErrors: true, showTimer: true, penalty: false };
-            case 'survival':
-                return { timeLimit: 0, type: 'survival', wordList: WORD_BANK, allowErrors: false, showTimer: true, penalty: true };
+            case 'word-rain':
+                return {
+                    ...baseConfig,
+                    type: 'word-rain',
+                    wordList: isBeginner ? BEGINNER_WORDS : (isAdvanced ? EXPERT_WORDS : INTERMEDIATE_WORDS),
+                    fallSpeed: isBeginner ? 1 : (isAdvanced ? 3 : 2) // Added for UI
+                };
             case 'sentence':
-                return { timeLimit: 0, type: 'sentence', wordList: [], allowErrors: false, showTimer: true, penalty: false };
+                return {
+                    ...baseConfig,
+                    type: 'sentence',
+                    wordList: [],
+                    timeLimit: 0, // Sentences usually measured by completion time
+                    showTimer: true
+                };
+            case 'survival':
+                return {
+                    ...baseConfig,
+                    type: 'survival',
+                    wordList: WORD_BANK,
+                    lives: isBeginner ? 10 : 3,
+                    penalty: true
+                };
             case 'race':
-                return { timeLimit: 0, type: 'race', wordList: WORD_BANK, allowErrors: true, showTimer: true, penalty: false };
-            default: // classic
-                return { timeLimit: 60, type: 'classic', wordList: WORD_BANK, allowErrors: true, showTimer: true, penalty: false };
+                return {
+                    ...baseConfig,
+                    type: 'race',
+                    wordList: WORD_BANK,
+                    aiSpeed: isBeginner ? 2 : (isAdvanced ? 8 : 5)
+                };
+            case 'classic':
+            default:
+                return {
+                    ...baseConfig,
+                    type: 'classic',
+                    wordList: isBeginner ? BEGINNER_WORDS : (isAdvanced ? ADVANCED_WORDS : INTERMEDIATE_WORDS)
+                };
         }
     };
 
     useEffect(() => {
-        config.current = setupConfig(gameMode);
+        config.current = setupConfig(gameMode, difficulty);
         resetGame();
 
         return () => {
             if (timerRef.current) clearInterval(timerRef.current);
         };
-    }, [gameMode]);
+    }, [gameMode, difficulty]);
 
     const getRandomWords = (count, sourceList = WORD_BANK) => {
         let res = [];
@@ -88,7 +117,7 @@ export const useGameLogic = (gameMode) => {
         setInputValue('');
         setCurrentWordIndex(0);
         setStats({ wpm: 0, accuracy: 100, mistakes: 0, correctChars: 0, totalChars: 0, missedKeys: {} });
-        setLives(config.current.type === 'survival' ? 5 : 3);
+        setLives(config.current.type === 'survival' ? (config.current.lives || 3) : 3);
         setAiProgress(0);
 
         if (config.current.type === 'sentence') {
@@ -122,7 +151,8 @@ export const useGameLogic = (gameMode) => {
 
             if (config.current.type === 'race') {
                 setAiProgress(prev => {
-                    const next = prev + (Math.random() * 5 + 2); // 2-7% per sec
+                    const speedFactor = config.current.aiSpeed || 3;
+                    const next = prev + (Math.random() * (speedFactor / 2) + (speedFactor / 4));
                     if (next >= 100) {
                         endGame();
                         return 100;
@@ -140,7 +170,7 @@ export const useGameLogic = (gameMode) => {
 
         // Save Result (skip for now or implement logic for modules)
         const token = localStorage.getItem('token');
-        if (token && ['classic', 'survival', 'race', 'sentence'].includes(config.current.type)) { // Only save for main games for now
+        if (token && ['classic', 'survival', 'race', 'sentence'].includes(config.current.type)) {
             // ... save logic ...
         }
     }, []);
@@ -184,7 +214,7 @@ export const useGameLogic = (gameMode) => {
                 const targetChar = currentTarget[inputValue.length] || ' ';
                 setStats(prev => ({
                     ...prev,
-                    mistakes: prev.mistakes + 1, // Count 1 mistake for the word submission error
+                    mistakes: prev.mistakes + 1,
                     totalChars: prev.totalChars + trimmedVal.length + 1,
                     missedKeys: {
                         ...prev.missedKeys,
@@ -197,16 +227,15 @@ export const useGameLogic = (gameMode) => {
                     advanceWord();
                 } else {
                     // Strict Mode: Block the Space input
-                    // Remove the trailing space so user feels "blocked" at the end of the word
                     setInputValue(prev => prev.trim());
-                    // Optionally visual feedback could be triggered here
                 }
 
                 // Survival Check
                 if (config.current.type === 'survival') {
                     setLives(prev => {
-                        if (prev <= 1) endGame();
-                        return prev - 1;
+                        const newLives = prev - 1;
+                        if (newLives <= 0) endGame();
+                        return newLives;
                     });
                 }
             }
@@ -214,7 +243,6 @@ export const useGameLogic = (gameMode) => {
     };
 
     // Derived Stats for Display
-    // Avoid division by zero
     const timeElapsed = config.current.timeLimit > 0 ? (config.current.timeLimit - time) : time;
     const wpm = Math.round((stats.correctChars / 5) / (Math.max(timeElapsed, 1) / 60) || 0);
     const accuracy = stats.totalChars > 0 ? Math.round((stats.correctChars / stats.totalChars) * 100) : 100;
@@ -254,6 +282,6 @@ export const useGameLogic = (gameMode) => {
         startGame,
         resetGame,
         currentWordIndex,
-        config: config.current // Export config for UI adjustments
+        config: config.current
     };
 };

@@ -148,23 +148,144 @@ body {
   margin: 0.5rem 0;
 }
 
+/* Game Modes Grid */
 .game-modes-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 2rem;
+  padding-bottom: 4rem;
 }
 
 .game-mode-card {
-  background: var(--bg-card);
-  padding: 2rem;
-  border-radius: 16px;
-  text-align: center;
-  cursor: pointer;
-  transition: 0.3s;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .game-mode-card:hover {
-  border-color: var(--secondary);
-  background: rgba(255, 0, 80, 0.05);
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* Session Header */
+.session-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 1rem 2rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.btn-icon {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-icon:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+}
+
+.stat-pill {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  margin-left: 1rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.lives {
+  color: var(--secondary);
+}
+
+/* Practice Container */
+.practice-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-dark);
+}
+
+.session-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  max-width: 1000px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 2rem;
+}
+
+.hidden-input {
+  position: absolute;
+  opacity: 0;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  cursor: default;
+}
+
+/* Word Stream */
+.word-stream {
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 1.8rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+  gap: 1rem;
+  margin-bottom: 4rem;
+  justify-content: center;
+}
+
+.word.active {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  position: relative;
+}
+
+.word.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--primary);
+}
+
+/* Race Mode */
+.race-track {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.racer {
+  height: 8px;
+  border-radius: 4px;
+  position: relative;
+  transition: width 0.3s linear;
+}
+
+.racer::after {
+  content: attr(data-label);
+  position: absolute;
+  right: -20px;
+  top: -20px;
+  color: #fff;
 }

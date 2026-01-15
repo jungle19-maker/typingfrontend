@@ -3,171 +3,121 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useGameLogic } from '../hooks/useGameLogic';
 import InstructionalUI from '../components/InstructionalUI';
 import ResultPanel from '../components/ResultPanel';
-import '../App.css'; // Ensure styles
+import '../App.css';
 
 const PracticeSession = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-    const mode = searchParams.get('mode') || 'beginner';
+    const mode = searchParams.get('mode') || 'classic';
+    const difficulty = searchParams.get('difficulty') || 'beginner';
+
     const {
         words, inputValue, handleInput, time, isPlaying, isGameOver,
-        stats, startGame, resetGame, currentWordIndex, config
-    } = useGameLogic(mode);
+        stats, startGame, resetGame, currentWordIndex, config,
+        lives, aiProgress
+    } = useGameLogic(mode, difficulty);
 
-    // Auto-start for practice modes
+    // Auto-start
     useEffect(() => {
         if (!isPlaying && !isGameOver) {
             startGame();
         }
     }, [isPlaying, isGameOver]);
 
-    // Calculate progress through current word for highlighting
     const currentWord = words[currentWordIndex] || '';
     const nextCharIndex = inputValue.length;
-    const nextChar = currentWord[nextCharIndex] || ' '; // Default to space if at end of word
+    const nextChar = currentWord[nextCharIndex] || ' ';
 
     return (
-        <div className="practice-container" style={{
-            background: '#f8f9fa',
-            minHeight: '100vh',
-            color: '#333',
-            fontFamily: "'Inter', sans-serif",
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            padding: '2rem'
-        }}>
-            {/* Header Removed - Exit Button Floating */}
-            <div style={{ position: 'absolute', top: '20px', left: '20px', zIndex: 10 }}>
-                <button onClick={() => navigate('/practice')} style={{ background: 'none', border: '1px solid #ddd', padding: '5px 10px', borderRadius: '4px', color: '#666', cursor: 'pointer', fontSize: '0.9rem' }}>
+        <div className="practice-container">
+            {/* Header */}
+            <div className="session-header">
+                <button onClick={() => navigate('/practice')} className="btn-icon">
                     ← Exit
                 </button>
-            </div>
-            {/* Stats Summary Floating */}
-            <div style={{ position: 'absolute', top: '20px', right: '20px', fontSize: '0.9rem', color: '#666' }}>
-                {config.showTimer && <span>{time}s</span>}
-                {config.type === 'advanced' && <span style={{ marginLeft: '1rem' }}>{stats.wpm} WPM</span>}
+                <div className="session-info">
+                    <h2 style={{ textTransform: 'capitalize' }}>{mode} · {difficulty}</h2>
+                </div>
+                <div className="session-stats">
+                    {config.showTimer && <span className="stat-pill">{time}s</span>}
+                    <span className="stat-pill">{stats.wpm} WPM</span>
+                    {mode === 'survival' && <span className="stat-pill lives">Lives: {lives}</span>}
+                </div>
             </div>
 
-            {/* Main Content Area */}
-            <main style={{ width: '100%', maxWidth: '800px', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-
-                {/* Result View */}
+            {/* Main Content */}
+            <main className="session-main">
                 {isGameOver ? (
                     <ResultPanel stats={stats} onRetry={() => { resetGame(); startGame(); }} />
                 ) : (
                     <>
-                        {/* Word Display Area - Dynamic Layouts */}
-                        <div style={{ marginBottom: '2rem', textAlign: 'center', position: 'relative' }}>
+                        <input
+                            type="text"
+                            value={inputValue}
+                            onChange={handleInput}
+                            autoFocus
+                            className="hidden-input"
+                        />
 
-                            {/* Input - Hidden/Transparent overlay to capture focus */}
-                            <input
-                                type="text"
-                                value={inputValue}
-                                onChange={handleInput}
-                                autoFocus
-                                style={{
-                                    opacity: 0,
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                    width: '100%',
-                                    height: '100%',
-                                    cursor: 'default'
-                                }}
-                            />
-
-                            {/* Beginner: Single Large Word */}
-                            {mode === 'beginner' && (
-                                <div style={{ fontSize: '4rem', fontWeight: '500', letterSpacing: '2px', color: '#aaa' }}>
-                                    {currentWord.split('').map((char, idx) => {
-                                        let color = '#ccc';
-                                        if (idx < inputValue.length) {
-                                            color = inputValue[idx] === char ? '#2ecc71' : '#e74c3c';
-                                        } else if (idx === inputValue.length) {
-                                            color = '#333'; // Highlight current char
-                                        }
-                                        return <span key={idx} style={{ color, borderBottom: idx === inputValue.length ? '3px solid #3498db' : 'none' }}>{char}</span>;
-                                    })}
+                        {/* Race Mode UI */}
+                        {mode === 'race' && (
+                            <div className="race-track">
+                                <div className="racer" style={{ width: `${(currentWordIndex / words.length) * 100}%`, background: 'var(--primary)' }}>
+                                    You 🚗
                                 </div>
-                            )}
-
-                            {/* Elementary: Horizontal Line Focus */}
-                            {mode === 'elementary' && (
-                                <div style={{
-                                    display: 'flex',
-                                    flexDirection: 'row',
-                                    gap: '2rem',
-                                    fontSize: '2rem',
-                                    color: '#bbb',
-                                    justifyContent: 'center',
-                                    alignItems: 'baseline'
-                                }}>
-                                    {/* Show previous, current, next words context */}
-                                    {words.slice(Math.max(0, currentWordIndex - 1), currentWordIndex + 3).map((w, i) => {
-                                        const actualIndex = Math.max(0, currentWordIndex - 1) + i;
-                                        const isCurrent = actualIndex === currentWordIndex;
-                                        return (
-                                            <div key={actualIndex} style={{
-                                                color: isCurrent ? '#333' : '#eee',
-                                                fontWeight: isCurrent ? 'bold' : 'normal',
-                                                transform: isCurrent ? 'scale(1.1)' : 'none',
-                                                transition: 'all 0.3s'
-                                            }}>
-                                                {isCurrent ? (
-                                                    /* Detailed char rendering for current word */
-                                                    w.split('').map((char, idx) => {
-                                                        let color = '#333';
-                                                        if (idx < inputValue.length) {
-                                                            color = inputValue[idx] === char ? '#2ecc71' : '#e74c3c';
-                                                        }
-                                                        return <span key={idx} style={{ color, borderBottom: (idx === inputValue.length && isCurrent) ? '2px solid #3498db' : 'none' }}>{char}</span>
-                                                    })
-                                                ) : w}
-                                            </div>
-                                        );
-                                    })}
+                                <div className="racer opponent" style={{ width: `${aiProgress}%`, background: 'var(--secondary)' }}>
+                                    CPU 🏎️
                                 </div>
-                            )}
+                            </div>
+                        )}
 
-                            {/* Intermediate/Advanced: Stream */}
-                            {['intermediate', 'advanced', 'expert'].includes(mode) && (
-                                <div style={{
-                                    display: 'flex',
-                                    flexWrap: 'wrap',
-                                    width: '100%',
-                                    maxWidth: '700px',
-                                    fontSize: '1.5rem',
-                                    lineHeight: '3rem',
-                                    color: '#bbb',
-                                    textAlign: 'left',
-                                    background: '#fff',
-                                    padding: '2rem',
-                                    borderRadius: '10px',
-                                    boxShadow: '0 2px 10px rgba(0,0,0,0.03)'
-                                }}>
+                        {/* Word Rain UI (Simplified as scrolling list for now, or could vary) */}
+                        {mode === 'word-rain' ? (
+                            <div className="word-rain-view">
+                                {/* Future: Canvas implementation. Current: Vertical Stack */}
+                                <div style={{ textAlign: 'center', fontSize: '2rem' }}>
+                                    Coming Soon: Rain Animation
+                                </div>
+                            </div>
+                        ) : (
+                            /* Standard / Sentence View */
+                            <div className="typing-area">
+                                {mode === 'sentence' ? (
+                                    <div className="sentence-view">
+                                        {words.join(' ').split('').map((char, idx) => {
+                                            // Mapping whole sentence logic is complex with word-based hook.
+                                            // Fallback to word-by-word for now for 'sentence' too in this hook version.
+                                            return <span key={idx}>{char}</span>
+                                        })}
+                                        {/* Actually, the hook is word-based. Let's stick to word display. */}
+                                    </div>
+                                ) : null}
+
+                                {/* Focused Word Display (Universal) */}
+                                <div className="word-stream">
                                     {words.slice(currentWordIndex, currentWordIndex + 15).map((w, i) => {
                                         const isCurrent = i === 0;
                                         return (
-                                            <span key={i} style={{ marginRight: '15px', color: isCurrent ? '#333' : '#ddd', position: 'relative' }}>
+                                            <span key={i} className={`word ${isCurrent ? 'active' : ''}`}>
                                                 {isCurrent ? (
                                                     w.split('').map((char, idx) => {
-                                                        let color = '#333';
+                                                        let color = 'var(--text-muted)';
                                                         if (idx < inputValue.length) {
-                                                            color = inputValue[idx] === char ? '#2ecc71' : '#e74c3c';
+                                                            color = inputValue[idx] === char ? 'var(--success)' : 'var(--error)';
+                                                        } else if (idx === inputValue.length) {
+                                                            color = 'var(--primary)'; // Cursor char
                                                         }
-                                                        return <span key={idx} style={{ color, borderBottom: idx === inputValue.length ? '2px solid #3498db' : 'none' }}>{char}</span>
+                                                        return <span key={idx} style={{ color }}>{char}</span>
                                                     })
                                                 ) : w}
                                             </span>
                                         );
                                     })}
                                 </div>
-                            )}
-                        </div>
+                            </div>
+                        )}
 
-                        {/* Instructional Guide - Positioned below input */}
-                        <div style={{ marginTop: 'auto', width: '100%' }}>
+                        <div className="instructional-footer">
                             <InstructionalUI activeChar={nextChar} />
                         </div>
                     </>
