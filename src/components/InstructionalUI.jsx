@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
-// Finger Mappings
+// --- Constants & Config ---
+
 const FINGER_KEY_MAP = {
     'l_pinky': ['`', '1', 'q', 'a', 'z', 'Tab', 'Caps', 'Shift'],
     'l_ring': ['2', 'w', 's', 'x'],
@@ -27,104 +28,111 @@ const KEYBOARD_ROWS = [
         { key: 'H', finger: 'r_index' }, { key: 'J', finger: 'r_index' }, { key: 'K', finger: 'r_middle' }, { key: 'L', finger: 'r_ring' }, { key: ';', finger: 'r_pinky' }, { key: "'", finger: 'r_pinky' }, { key: 'Enter', finger: 'r_pinky', width: '80px' }
     ],
     [
-        { key: 'Shift', finger: 'l_pinky', width: '90px' }, { key: 'Z', finger: 'l_pinky' }, { key: 'X', finger: 'l_ring' }, { key: 'C', finger: 'l_middle' }, { key: 'V', finger: 'l_index' }, { key: 'B', finger: 'l_index' },
-        { key: 'N', finger: 'r_index' }, { key: 'M', finger: 'r_index' }, { key: ',', finger: 'r_middle' }, { key: '.', finger: 'r_ring' }, { key: '/', finger: 'r_pinky' }, { key: 'Shift', finger: 'r_pinky', width: '90px' }
+        { key: 'Shift', finger: 'l_pinky', width: '90px', id: 'ShiftLeft' }, { key: 'Z', finger: 'l_pinky' }, { key: 'X', finger: 'l_ring' }, { key: 'C', finger: 'l_middle' }, { key: 'V', finger: 'l_index' }, { key: 'B', finger: 'l_index' },
+        { key: 'N', finger: 'r_index' }, { key: 'M', finger: 'r_index' }, { key: ',', finger: 'r_middle' }, { key: '.', finger: 'r_ring' }, { key: '/', finger: 'r_pinky' }, { key: 'Shift', finger: 'r_pinky', width: '90px', id: 'ShiftRight' }
     ],
     [
         { key: 'Space', finger: 'thumb', width: '300px' }
     ]
 ];
 
-const FINGER_COLORS = {
-    'l_pinky': 'rgba(255, 99, 71, 0.6)',
-    'l_ring': 'rgba(255, 215, 0, 0.6)',
-    'l_middle': 'rgba(50, 205, 50, 0.6)',
-    'l_index': 'rgba(30, 144, 255, 0.6)',
-    'r_index': 'rgba(30, 144, 255, 0.6)',
-    'r_middle': 'rgba(50, 205, 50, 0.6)',
-    'r_ring': 'rgba(255, 215, 0, 0.6)',
-    'r_pinky': 'rgba(255, 99, 71, 0.6)',
-    'thumb': 'rgba(128, 128, 128, 0.6)'
+const NEON_COLORS = {
+    'l_pinky': '#ff0055', 'l_ring': '#ffcc00', 'l_middle': '#00ff66', 'l_index': '#00ccff',
+    'r_index': '#00ccff', 'r_middle': '#00ff66', 'r_ring': '#ffcc00', 'r_pinky': '#ff0055',
+    'thumb': '#aa00ff'
 };
 
-const FINGER_NAMES = {
-    'l_pinky': 'Left Pinky',
-    'l_ring': 'Left Ring',
-    'l_middle': 'Left Middle',
-    'l_index': 'Left Index',
-    'r_index': 'Right Index',
-    'r_middle': 'Right Middle',
-    'r_ring': 'Right Ring',
-    'r_pinky': 'Right Pinky',
-    'thumb': 'Thums'
+// SVG Paths for Realistic Hands (Simplified for Code)
+// Left Hand Top-Down View
+const LEFT_HAND_PATHS = {
+    'l_pinky': "M10,80 Q5,70 5,50 Q5,30 15,30 Q25,30 25,50 L25,80",
+    'l_ring': "M30,80 L30,40 Q30,20 40,20 Q50,20 50,40 L50,80",
+    'l_middle': "M55,80 L55,35 Q55,10 65,10 Q75,10 75,35 L75,80",
+    'l_index': "M80,80 L80,40 Q80,20 90,20 Q100,20 100,40 L100,80",
+    'thumb': "M110,80 Q130,70 140,90 Q130,110 110,100"
 };
 
-const InstructionalUI = ({ activeChar }) => {
-    const [hoveredFinger, setHoveredFinger] = useState(null);
+// Right Hand (Mirrored logic handled in render) 
+const RIGHT_HAND_PATHS = {
+    'r_pinky': "M190,80 Q195,70 195,50 Q195,30 185,30 Q175,30 175,50 L175,80", // mirrored approx
+    'r_ring': "M170,80 L170,40 Q170,20 160,20 Q150,20 150,40 L150,80",
+    'r_middle': "M145,80 L145,35 Q145,10 135,10 Q125,10 125,35 L125,80",
+    'r_index': "M120,80 L120,40 Q120,20 110,20 Q100,20 100,40 L100,80",
+    'thumb': "M90,80 Q70,70 60,90 Q70,110 90,100"
+};
 
-    // Determine active finger based on char or hover
+
+const InstructionalUI = ({ activeChar, difficulty }) => {
+    const isAdvanced = difficulty === 'advanced';
+    const [shiftActive, setShiftActive] = useState(null); // 'left' or 'right'
+
     const getFingerForChar = (char) => {
         if (!char) return null;
-        const upperChar = char.toUpperCase();
         if (char === ' ') return 'thumb';
+        const upperChar = char.toUpperCase();
 
         for (let row of KEYBOARD_ROWS) {
             for (let k of row) {
                 if (k.key === upperChar) return k.finger;
             }
         }
-        return null;
+        return null; // Fallback
     };
 
-    const activeFinger = hoveredFinger || getFingerForChar(activeChar);
+    // Determine Logic
+    let targetFinger = getFingerForChar(activeChar);
+    let targetKey = activeChar === ' ' ? 'Space' : activeChar?.toUpperCase();
+    let requiresShift = activeChar && activeChar !== ' ' && activeChar === activeChar.toUpperCase() && /^[A-Z~!@#$%^&*()_+{}|:"<>?]$/.test(activeChar);
 
-    // SVG Hand Paths (Simplified Schematic)
-    // Coords approximate 2 hands
-    const handPaths = [
-        // Left Hand
-        { id: 'l_pinky', d: "M 50 120 L 50 80 Q 50 70 60 70 L 70 70 Q 80 70 80 80 L 80 120 Z", label: "LP" }, // Pinky
-        { id: 'l_ring', d: "M 90 120 L 90 60 Q 90 50 100 50 L 110 50 Q 120 50 120 60 L 120 120 Z", label: "LR" }, // Ring
-        { id: 'l_middle', d: "M 130 120 L 130 40 Q 130 30 140 30 L 150 30 Q 160 30 160 40 L 160 120 Z", label: "LM" }, // Middle
-        { id: 'l_index', d: "M 170 120 L 170 50 Q 170 40 180 40 L 190 40 Q 200 40 200 50 L 200 120 Z", label: "LI" }, // Index
-        { id: 'thumb', d: "M 220 120 L 240 100 Q 250 100 260 110 L 250 140 Z", label: "T" }, // Thumb (L+R shared logical, here visual L)
-
-        // Right Hand (Mirrored-ish)
-        { id: 'r_index', d: "M 440 120 L 440 50 Q 440 40 450 40 L 460 40 Q 470 40 470 50 L 470 120 Z", label: "RI" },
-        { id: 'r_middle', d: "M 480 120 L 480 40 Q 480 30 490 30 L 500 30 Q 510 30 510 40 L 510 120 Z", label: "RM" },
-        { id: 'r_ring', d: "M 520 120 L 520 60 Q 520 50 530 50 L 540 50 Q 550 50 550 60 L 550 120 Z", label: "RR" },
-        { id: 'r_pinky', d: "M 560 120 L 560 80 Q 560 70 570 70 L 580 70 Q 590 70 590 80 L 590 120 Z", label: "RP" }
-    ];
+    // Shift Logic: Opposite hand
+    let shiftFinger = null;
+    let shiftKeyId = null;
+    if (requiresShift) {
+        if (targetFinger && targetFinger.startsWith('l_')) {
+            shiftFinger = 'r_pinky';
+            shiftKeyId = 'ShiftRight';
+        } else {
+            shiftFinger = 'l_pinky';
+            shiftKeyId = 'ShiftLeft';
+        }
+    }
 
     return (
-        <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '2rem' }}>
 
-            {/* Hint Text - Removed as per feedback */}
-            <div style={{ minHeight: '10px' }}></div>
-
-            {/* Realistic Hands SVG */}
-            <div style={{ marginBottom: '20px' }}>
-                <svg width="640" height="150" viewBox="0 0 640 150" style={{ filter: 'drop-shadow(0px 4px 4px rgba(0,0,0,0.1))' }}>
-                    {/* Palms (decor) */}
-                    <path d="M 50 120 L 220 120 Q 230 180 50 180 Z" fill="#e0caaf" />
-                    <path d="M 420 120 L 590 120 Q 420 180 600 180 Z" fill="#e0caaf" />
-
-                    {handPaths.map((finger) => {
-                        const isActive = activeFinger === finger.id;
+            {/* Hands Visualization */}
+            <div style={{ display: 'flex', gap: '50px', marginBottom: '20px', height: '150px' }}>
+                {/* Left Hand SVG */}
+                <svg width="150" height="150" viewBox="0 0 150 150" style={{ filter: 'drop-shadow(0 0 10px rgba(0,242,234,0.2))' }}>
+                    <path d="M10,80 Q5,120 40,140 L110,140 L110,100" fill="rgba(255,255,255,0.05)" stroke="none" /> {/* Palm Base */}
+                    {Object.entries(LEFT_HAND_PATHS).map(([finger, path]) => {
+                        const isActive = targetFinger === finger || shiftFinger === finger;
                         return (
                             <path
-                                key={finger.id}
-                                d={finger.d}
-                                fill={isActive ? FINGER_COLORS[finger.id] : "#f0d9c0"} // Skin tone vs Active Color
-                                stroke={isActive ? "#333" : "#dcbfa3"}
+                                key={finger}
+                                d={path}
+                                fill={isActive ? NEON_COLORS[finger] : 'rgba(255,255,255,0.1)'}
+                                stroke="rgba(255,255,255,0.2)"
                                 strokeWidth="2"
-                                onMouseEnter={() => setHoveredFinger(finger.id)}
-                                onMouseLeave={() => setHoveredFinger(null)}
-                                onClick={() => setHoveredFinger(prev => prev === finger.id ? null : finger.id)} // Toggle on click
-                                style={{
-                                    cursor: 'pointer',
-                                    transition: 'fill 0.2s',
-                                    transform: isActive ? 'translateY(-5px)' : 'none'
-                                }}
+                                style={{ transition: 'fill 0.1s' }}
+                            />
+                        );
+                    })}
+                </svg>
+
+                {/* Right Hand SVG */}
+                <svg width="200" height="150" viewBox="0 0 200 150" style={{ filter: 'drop-shadow(0 0 10px rgba(0,242,234,0.2))' }}>
+                    <path d="M190,80 Q195,120 160,140 L90,140 L90,100" fill="rgba(255,255,255,0.05)" stroke="none" />
+                    {Object.entries(RIGHT_HAND_PATHS).map(([finger, path]) => {
+                        const isActive = targetFinger === finger || shiftFinger === finger;
+                        return (
+                            <path
+                                key={finger}
+                                d={path}
+                                fill={isActive ? NEON_COLORS[finger] : 'rgba(255,255,255,0.1)'}
+                                stroke="rgba(255,255,255,0.2)"
+                                strokeWidth="2"
+                                style={{ transition: 'fill 0.1s' }}
                             />
                         );
                     })}
@@ -136,29 +144,25 @@ const InstructionalUI = ({ activeChar }) => {
                 display: 'inline-flex',
                 flexDirection: 'column',
                 gap: '6px',
-                background: '#e9ecef',
+                background: 'rgba(20, 20, 23, 0.95)',
                 padding: '20px',
                 borderRadius: '15px',
-                boxShadow: '0 8px 16px rgba(0,0,0,0.08)',
-                marginTop: '-10px',
+                border: '1px solid rgba(255,255,255,0.05)',
                 position: 'relative',
-                zIndex: 2
+                boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
             }}>
                 {KEYBOARD_ROWS.map((row, rIndex) => (
                     <div key={rIndex} style={{ display: 'flex', justifyContent: 'center', gap: '6px' }}>
                         {row.map((k, kIndex) => {
-                            // Check if key belongs to active finger
-                            const isFingerActive = activeFinger === k.finger;
-                            // Check if key is the specific active char (typing target)
-                            const isTargetKey = (activeChar && k.key === activeChar.toUpperCase()) || (activeChar === ' ' && k.key === 'Space');
+                            const isTarget = k.key.toUpperCase() === targetKey;
+                            const isShiftTarget = k.id === shiftKeyId;
+                            const isActive = isTarget || isShiftTarget;
 
-                            const isActive = isFingerActive || isTargetKey;
+                            // In Advanced mode, hide labels unless active? Or just styled differently? 
+                            // Request says "Keyboard labels hidden" for Advanced.
+                            const showLabel = !isAdvanced || isActive;
 
-                            // Color logic: 
-                            // If target key: Strong highlight
-                            // If just finger active (hover): Soft highlight matching finger color
-                            const bgColor = isTargetKey ? '#333' : (isFingerActive ? FINGER_COLORS[k.finger] : '#fff');
-                            const textColor = isTargetKey ? '#fff' : (isFingerActive ? 'rgba(0,0,0,0.7)' : '#555');
+                            const activeColor = NEON_COLORS[k.finger] || '#fff';
 
                             return (
                                 <div key={kIndex} style={{
@@ -167,23 +171,35 @@ const InstructionalUI = ({ activeChar }) => {
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    background: bgColor,
-                                    borderRadius: '8px',
-                                    color: textColor,
-                                    fontWeight: '600',
-                                    fontSize: '1rem',
-                                    borderBottom: isTargetKey ? 'none' : '4px solid #ced4da',
-                                    transform: isTargetKey ? 'translateY(2px)' : 'none',
-                                    boxShadow: isTargetKey ? 'inset 0 2px 4px rgba(0,0,0,0.3)' : 'none',
-                                    transition: 'all 0.1s'
+                                    background: isActive ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.4)',
+                                    borderRadius: '6px',
+                                    border: `1px solid ${isActive ? activeColor : 'rgba(255,255,255,0.05)'}`,
+                                    boxShadow: isActive ? `0 0 15px ${activeColor}60` : 'none',
+                                    color: isActive ? '#fff' : 'rgba(255,255,255,0.3)',
+                                    transform: isActive ? 'scale(0.95)' : 'none',
+                                    transition: 'all 0.1s',
+                                    fontSize: '0.9rem',
+                                    fontWeight: 'bold'
                                 }}>
-                                    {k.key === 'Space' ? '' : k.key}
+                                    {showLabel ? (k.key === 'Space' ? '' : k.key) : ''}
                                 </div>
                             );
                         })}
                     </div>
                 ))}
             </div>
+
+            {/* Instruction Text */}
+            {!isAdvanced && (
+                <div style={{ marginTop: '1.5rem', color: 'var(--text-muted)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    {requiresShift && (
+                        <span style={{ color: '#aaa000', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <span style={{ fontSize: '1.2rem' }}>⇧</span> HOLD SHIFT
+                        </span>
+                    )}
+                    {activeChar && <span>Type <strong>{activeChar === ' ' ? 'Space' : activeChar}</strong> with {FINGER_KEY_MAP[targetFinger] ? targetFinger.replace('_', ' ') : 'Finger'}</span>}
+                </div>
+            )}
         </div>
     );
 };

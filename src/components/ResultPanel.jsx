@@ -1,101 +1,91 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
-// Maps fingers to their keys
-const FINGERS = {
-    'Left Pinky': ['q', 'a', 'z', '1'],
-    'Left Ring': ['w', 's', 'x', '2'],
-    'Left Middle': ['e', 'd', 'c', '3'],
-    'Left Index': ['r', 'f', 'v', 't', 'g', '4', '5'],
-    'Right Index': ['y', 'h', 'n', 'u', 'j', 'm', '6', '7'],
-    'Right Middle': ['i', 'k', ',', '8'],
-    'Right Ring': ['o', 'l', '.', '9'],
-    'Right Pinky': ['p', ';', '/', '0', '-', '=', '[', ']', '\\', "'"]
-};
+const ResultPanel = ({ stats, rank, maxCombo, onRetry }) => {
+    const navigate = useNavigate();
 
-const ResultPanel = ({ stats, onRetry }) => {
-    // Analyze weak finger
-    const getWeakFinger = () => {
-        const fingerErrors = {};
-        const missed = stats.missedKeys || {};
-
-        Object.keys(missed).forEach(key => {
-            const lowerKey = key.toLowerCase();
-            let found = false;
-            for (const [finger, keys] of Object.entries(FINGERS)) {
-                if (keys.includes(lowerKey)) {
-                    fingerErrors[finger] = (fingerErrors[finger] || 0) + missed[key];
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                // Symbols might be tricky, default to generic if not mapped
-                // or just ignore
-            }
-        });
-
-        const sorted = Object.entries(fingerErrors).sort((a, b) => b[1] - a[1]);
-        if (sorted.length > 0) {
-            return `${sorted[0][0]} (${sorted[0][1]} mistakes)`;
-        }
-        return "None! Perfect typing.";
+    // Rank Colors
+    const rankColors = {
+        'Bronze': '#cd7f32',
+        'Silver': '#c0c0c0',
+        'Gold': '#ffd700',
+        'Platinum': '#e5e4e2',
+        'Diamond': '#b9f2ff'
     };
+
+    const rankColor = rankColors[rank] || '#fff';
 
     return (
         <div style={{
-            background: '#ffffff',
-            borderRadius: '12px',
-            padding: '2rem',
+            background: 'rgba(23, 23, 28, 0.95)',
+            borderRadius: '24px',
+            padding: '3rem',
             textAlign: 'center',
-            boxShadow: '0 4px 15px rgba(0,0,0,0.05)',
-            maxWidth: '600px',
+            boxShadow: '0 0 50px rgba(0,0,0,0.5)',
+            maxWidth: '500px',
             margin: '0 auto',
-            border: '1px solid #eee'
+            border: '1px solid rgba(255,255,255,0.1)',
+            backdropFilter: 'blur(20px)',
+            animation: 'fadeIn 0.5s ease-out'
         }}>
-            <h2 style={{ color: '#2c3e50', marginBottom: '2rem', fontWeight: '600' }}>Session Results</h2>
+            <h2 style={{ color: 'var(--text-muted)', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '3px', fontSize: '1rem' }}>Session Complete</h2>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
-                <div className="stat-item">
-                    <p style={{ color: '#7f8c8d', margin: 0, fontSize: '0.9rem', textTransform: 'uppercase' }}>WPM</p>
-                    <h3 style={{ fontSize: '2.5rem', margin: '0.5rem 0', color: '#2ecc71' }}>{stats.wpm}</h3>
-                </div>
-                <div className="stat-item">
-                    <p style={{ color: '#7f8c8d', margin: 0, fontSize: '0.9rem', textTransform: 'uppercase' }}>Accuracy</p>
-                    <h3 style={{ fontSize: '2.5rem', margin: '0.5rem 0', color: '#3498db' }}>{stats.accuracy}%</h3>
-                </div>
-                <div className="stat-item">
-                    <p style={{ color: '#7f8c8d', margin: 0, fontSize: '0.9rem', textTransform: 'uppercase' }}>Correct Keys</p>
-                    <h3 style={{ fontSize: '1.5rem', margin: '0.5rem 0', color: '#555' }}>{stats.correctChars}</h3>
-                </div>
-                <div className="stat-item">
-                    <p style={{ color: '#7f8c8d', margin: 0, fontSize: '0.9rem', textTransform: 'uppercase' }}>Mistakes</p>
-                    <h3 style={{ fontSize: '1.5rem', margin: '0.5rem 0', color: '#e74c3c' }}>{stats.mistakes}</h3>
+            {/* Rank Badget */}
+            <div style={{ marginBottom: '2rem' }}>
+                <div style={{
+                    display: 'inline-block',
+                    background: `linear-gradient(45deg, ${rankColor}20, transparent)`,
+                    border: `2px solid ${rankColor}`,
+                    padding: '1rem 3rem',
+                    borderRadius: '50px',
+                    boxShadow: `0 0 30px ${rankColor}40`
+                }}>
+                    <h1 style={{ margin: 0, color: rankColor, fontSize: '3rem', textShadow: `0 0 20px ${rankColor}` }}>{rank}</h1>
                 </div>
             </div>
 
-            <div style={{ padding: '1.5rem', background: '#f8f9fa', borderRadius: '8px', marginBottom: '2rem' }}>
-                <p style={{ margin: 0, color: '#95a5a6', fontSize: '0.9rem' }}>Weakest Finger Analysis</p>
-                <p style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#e67e22', marginTop: '0.5rem' }}>
-                    {getWeakFinger()}
-                </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '3rem' }}>
+                <div>
+                    <div style={{ fontSize: '3.5rem', fontWeight: '800', color: '#fff', lineHeight: 1 }}>{stats.wpm}</div>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', textTransform: 'uppercase', marginTop: '5px' }}>WPM</div>
+                </div>
+                <div>
+                    <div style={{ fontSize: '3.5rem', fontWeight: '800', color: '#fff', lineHeight: 1 }}>{stats.accuracy}%</div>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', textTransform: 'uppercase', marginTop: '5px' }}>Accuracy</div>
+                </div>
+                <div>
+                    <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--primary)' }}>{maxCombo}x</div>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Max Combo</div>
+                </div>
+                <div>
+                    <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--error)' }}>{stats.mistakes}</div>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Mistakes</div>
+                </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
                 <button
                     onClick={onRetry}
-                    className="btn"
+                    className="btn btn-primary"
                     style={{
-                        background: '#34495e',
-                        color: '#fff',
-                        padding: '12px 30px',
-                        border: 'none',
-                        borderRadius: '6px',
-                        fontSize: '1rem',
-                        cursor: 'pointer',
-                        fontWeight: '500'
+                        padding: '1rem 3rem',
+                        fontSize: '1.2rem',
+                        boxShadow: '0 10px 30px var(--primary-glow)'
                     }}
                 >
-                    Practice Again
+                    Play Again
+                </button>
+                <button
+                    onClick={() => navigate('/game')}
+                    className="btn"
+                    style={{
+                        background: 'transparent',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        color: 'var(--text-muted)',
+                        padding: '1rem 2rem'
+                    }}
+                >
+                    Menu
                 </button>
             </div>
         </div>
