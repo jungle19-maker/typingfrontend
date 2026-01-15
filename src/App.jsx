@@ -5,7 +5,7 @@ import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
+import Report from './pages/Report';
 import Practice from './pages/Practice';
 import PracticeSession from './pages/PracticeSession';
 import Game from './pages/Game';
@@ -22,7 +22,7 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/report" element={<Report />} />
               <Route path="/practice" element={<Practice />} />
               <Route path="/practice-session" element={<PracticeSession />} />
               <Route path="/game" element={<Game />} />

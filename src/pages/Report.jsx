@@ -3,7 +3,7 @@ import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-const Dashboard = () => {
+const Report = () => {
     const { user, loading } = useContext(AuthContext);
     const navigate = useNavigate();
     const [history, setHistory] = useState([]);
@@ -38,12 +38,10 @@ const Dashboard = () => {
         });
     };
 
-    const startGame = (mode) => navigate(`/game?mode=${mode}`);
-
     return (
         <div className="dashboard-container">
             <div className="welcome-section">
-                <h1>Welcome back, <span className="highlight" style={{ color: 'var(--primary)' }}>{user?.username}</span>!</h1>
+                <h1>Report for <span className="highlight" style={{ color: 'var(--primary)' }}>{user?.username}</span></h1>
             </div>
 
             <div className="stats-grid">
@@ -61,33 +59,23 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            <h2>Select Game Mode</h2>
-            <div className="game-modes-grid">
-                {['classic', 'word-rain', 'sentence', 'survival', 'race'].map(mode => (
-                    <div key={mode} className="game-mode-card" onClick={() => startGame(mode)}>
-                        <h3 style={{ textTransform: 'capitalize' }}>{mode.replace('-', ' ')}</h3>
-                        <p>Play now</p>
-                    </div>
-                ))}
-            </div>
-
-            <h2 style={{ marginTop: '3rem' }}>Recent History</h2>
+            <h2 style={{ marginTop: '3rem', color: 'var(--text-main)' }}>Activity History</h2>
             <div style={{ marginTop: '1rem' }}>
-                {history.length === 0 ? <p>No games played yet.</p> : (
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                {history.length === 0 ? <p style={{ color: 'var(--text-muted)' }}>No activity yet.</p> : (
+                    <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '1rem' }}>
                         <thead>
-                            <tr>
-                                <th style={{ textAlign: 'left', padding: '1rem' }}>Mode</th>
-                                <th style={{ textAlign: 'left', padding: '1rem' }}>WPM</th>
-                                <th style={{ textAlign: 'left', padding: '1rem' }}>Acc</th>
-                                <th style={{ textAlign: 'left', padding: '1rem' }}>Date</th>
+                            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                                <th style={{ textAlign: 'left', padding: '1rem', color: 'var(--text-muted)' }}>Mode</th>
+                                <th style={{ textAlign: 'left', padding: '1rem', color: 'var(--text-muted)' }}>WPM</th>
+                                <th style={{ textAlign: 'left', padding: '1rem', color: 'var(--text-muted)' }}>Accuracy</th>
+                                <th style={{ textAlign: 'left', padding: '1rem', color: 'var(--text-muted)' }}>Date</th>
                             </tr>
                         </thead>
                         <tbody>
                             {history.slice(0, 10).map(game => (
                                 <tr key={game._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                    <td style={{ padding: '1rem' }}>{game.gameType}</td>
-                                    <td style={{ padding: '1rem', color: 'var(--primary)' }}>{game.wpm}</td>
+                                    <td style={{ padding: '1rem', textTransform: 'capitalize' }}>{game.gameType}</td>
+                                    <td style={{ padding: '1rem', color: 'var(--primary)', fontWeight: 'bold' }}>{game.wpm}</td>
                                     <td style={{ padding: '1rem' }}>{game.accuracy}%</td>
                                     <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>{new Date(game.date).toLocaleDateString()}</td>
                                 </tr>
@@ -100,4 +88,4 @@ const Dashboard = () => {
     );
 };
 
-export default Dashboard;
+export default Report;

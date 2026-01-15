@@ -35,34 +35,22 @@ const KEYBOARD_ROWS = [
     ]
 ];
 
-const FINGER_COLORS = {
-    'l_pinky': 'rgba(255, 99, 71, 0.6)',
-    'l_ring': 'rgba(255, 215, 0, 0.6)',
-    'l_middle': 'rgba(50, 205, 50, 0.6)',
-    'l_index': 'rgba(30, 144, 255, 0.6)',
-    'r_index': 'rgba(30, 144, 255, 0.6)',
-    'r_middle': 'rgba(50, 205, 50, 0.6)',
-    'r_ring': 'rgba(255, 215, 0, 0.6)',
-    'r_pinky': 'rgba(255, 99, 71, 0.6)',
-    'thumb': 'rgba(128, 128, 128, 0.6)'
-};
-
-const FINGER_NAMES = {
-    'l_pinky': 'Left Pinky',
-    'l_ring': 'Left Ring',
-    'l_middle': 'Left Middle',
-    'l_index': 'Left Index',
-    'r_index': 'Right Index',
-    'r_middle': 'Right Middle',
-    'r_ring': 'Right Ring',
-    'r_pinky': 'Right Pinky',
-    'thumb': 'Thums'
+// Neon Colors
+const NEON_COLORS = {
+    'l_pinky': '#ff0055', // Pink
+    'l_ring': '#ffcc00',  // Yellow
+    'l_middle': '#00ff66', // Green
+    'l_index': '#00ccff', // Blue
+    'r_index': '#00ccff',
+    'r_middle': '#00ff66',
+    'r_ring': '#ffcc00',
+    'r_pinky': '#ff0055',
+    'thumb': '#aa00ff'   // Purple
 };
 
 const InstructionalUI = ({ activeChar }) => {
     const [hoveredFinger, setHoveredFinger] = useState(null);
 
-    // Determine active finger based on char or hover
     const getFingerForChar = (char) => {
         if (!char) return null;
         const upperChar = char.toUpperCase();
@@ -78,105 +66,69 @@ const InstructionalUI = ({ activeChar }) => {
 
     const activeFinger = hoveredFinger || getFingerForChar(activeChar);
 
-    // SVG Hand Paths (Simplified Schematic)
-    // Coords approximate 2 hands
-    const handPaths = [
-        // Left Hand
-        { id: 'l_pinky', d: "M 50 120 L 50 80 Q 50 70 60 70 L 70 70 Q 80 70 80 80 L 80 120 Z", label: "LP" }, // Pinky
-        { id: 'l_ring', d: "M 90 120 L 90 60 Q 90 50 100 50 L 110 50 Q 120 50 120 60 L 120 120 Z", label: "LR" }, // Ring
-        { id: 'l_middle', d: "M 130 120 L 130 40 Q 130 30 140 30 L 150 30 Q 160 30 160 40 L 160 120 Z", label: "LM" }, // Middle
-        { id: 'l_index', d: "M 170 120 L 170 50 Q 170 40 180 40 L 190 40 Q 200 40 200 50 L 200 120 Z", label: "LI" }, // Index
-        { id: 'thumb', d: "M 220 120 L 240 100 Q 250 100 260 110 L 250 140 Z", label: "T" }, // Thumb (L+R shared logical, here visual L)
-
-        // Right Hand (Mirrored-ish)
-        { id: 'r_index', d: "M 440 120 L 440 50 Q 440 40 450 40 L 460 40 Q 470 40 470 50 L 470 120 Z", label: "RI" },
-        { id: 'r_middle', d: "M 480 120 L 480 40 Q 480 30 490 30 L 500 30 Q 510 30 510 40 L 510 120 Z", label: "RM" },
-        { id: 'r_ring', d: "M 520 120 L 520 60 Q 520 50 530 50 L 540 50 Q 550 50 550 60 L 550 120 Z", label: "RR" },
-        { id: 'r_pinky', d: "M 560 120 L 560 80 Q 560 70 570 70 L 580 70 Q 590 70 590 80 L 590 120 Z", label: "RP" }
-    ];
-
     return (
-        <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
-
-            {/* Hint Text - Removed as per feedback */}
-            <div style={{ minHeight: '10px' }}></div>
-
-            {/* Realistic Hands SVG */}
-            <div style={{ marginBottom: '20px' }}>
-                <svg width="640" height="150" viewBox="0 0 640 150" style={{ filter: 'drop-shadow(0px 4px 4px rgba(0,0,0,0.1))' }}>
-                    {/* Palms (decor) */}
-                    <path d="M 50 120 L 220 120 Q 230 180 50 180 Z" fill="#e0caaf" />
-                    <path d="M 420 120 L 590 120 Q 420 180 600 180 Z" fill="#e0caaf" />
-
-                    {handPaths.map((finger) => {
-                        const isActive = activeFinger === finger.id;
-                        return (
-                            <path
-                                key={finger.id}
-                                d={finger.d}
-                                fill={isActive ? FINGER_COLORS[finger.id] : "#f0d9c0"} // Skin tone vs Active Color
-                                stroke={isActive ? "#333" : "#dcbfa3"}
-                                strokeWidth="2"
-                                onMouseEnter={() => setHoveredFinger(finger.id)}
-                                onMouseLeave={() => setHoveredFinger(null)}
-                                onClick={() => setHoveredFinger(prev => prev === finger.id ? null : finger.id)} // Toggle on click
-                                style={{
-                                    cursor: 'pointer',
-                                    transition: 'fill 0.2s',
-                                    transform: isActive ? 'translateY(-5px)' : 'none'
-                                }}
-                            />
-                        );
-                    })}
-                </svg>
-            </div>
-
+        <div className="neon-keyboard-container" style={{
+            marginTop: '3rem',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            width: '100%',
+            opacity: 0.9
+        }}>
             {/* Keyboard */}
             <div className="virtual-keyboard" style={{
                 display: 'inline-flex',
                 flexDirection: 'column',
-                gap: '6px',
-                background: '#e9ecef',
-                padding: '20px',
-                borderRadius: '15px',
-                boxShadow: '0 8px 16px rgba(0,0,0,0.08)',
-                marginTop: '-10px',
-                position: 'relative',
-                zIndex: 2
+                gap: '8px',
+                background: 'rgba(20, 20, 23, 0.9)',
+                padding: '25px',
+                borderRadius: '20px',
+                boxShadow: '0 0 30px rgba(0, 0, 0, 0.5), inset 0 0 5px rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255,255,255,0.05)',
+                backdropFilter: 'blur(10px)',
+                position: 'relative'
             }}>
-                {KEYBOARD_ROWS.map((row, rIndex) => (
-                    <div key={rIndex} style={{ display: 'flex', justifyContent: 'center', gap: '6px' }}>
-                        {row.map((k, kIndex) => {
-                            // Check if key belongs to active finger
-                            const isFingerActive = activeFinger === k.finger;
-                            // Check if key is the specific active char (typing target)
-                            const isTargetKey = (activeChar && k.key === activeChar.toUpperCase()) || (activeChar === ' ' && k.key === 'Space');
+                {/* Decorative Top Glow */}
+                <div style={{
+                    position: 'absolute',
+                    top: -2, left: '20%', right: '20%',
+                    height: '2px',
+                    background: 'linear-gradient(90deg, transparent, #00f2ea, transparent)',
+                    opacity: 0.7
+                }} />
 
+                {KEYBOARD_ROWS.map((row, rIndex) => (
+                    <div key={rIndex} style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
+                        {row.map((k, kIndex) => {
+                            const isFingerActive = activeFinger === k.finger;
+                            const isTargetKey = (activeChar && k.key === activeChar.toUpperCase()) || (activeChar === ' ' && k.key === 'Space');
                             const isActive = isFingerActive || isTargetKey;
 
-                            // Color logic: 
-                            // If target key: Strong highlight
-                            // If just finger active (hover): Soft highlight matching finger color
-                            const bgColor = isTargetKey ? '#333' : (isFingerActive ? FINGER_COLORS[k.finger] : '#fff');
-                            const textColor = isTargetKey ? '#fff' : (isFingerActive ? 'rgba(0,0,0,0.7)' : '#555');
+                            // Dynamic Neon Styles
+                            const activeColor = NEON_COLORS[k.finger] || '#fff';
+
+                            const keyStyle = {
+                                width: k.width || '55px',
+                                height: '55px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                background: isActive ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.3)',
+                                borderRadius: '8px',
+                                color: isActive ? '#fff' : 'rgba(255,255,255,0.5)',
+                                fontWeight: '600',
+                                fontSize: '1rem',
+                                border: `1px solid ${isActive ? activeColor : 'rgba(255,255,255,0.05)'}`,
+                                boxShadow: isTargetKey
+                                    ? `0 0 15px ${activeColor}, inset 0 0 10px ${activeColor}40`
+                                    : (isActive ? `0 0 8px ${activeColor}40` : '0 4px 6px rgba(0,0,0,0.2)'),
+                                transform: isTargetKey ? 'translateY(1px)' : 'none',
+                                transition: 'all 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                textShadow: isTargetKey ? `0 0 10px ${activeColor}` : 'none'
+                            };
 
                             return (
-                                <div key={kIndex} style={{
-                                    width: k.width || '50px',
-                                    height: '50px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    background: bgColor,
-                                    borderRadius: '8px',
-                                    color: textColor,
-                                    fontWeight: '600',
-                                    fontSize: '1rem',
-                                    borderBottom: isTargetKey ? 'none' : '4px solid #ced4da',
-                                    transform: isTargetKey ? 'translateY(2px)' : 'none',
-                                    boxShadow: isTargetKey ? 'inset 0 2px 4px rgba(0,0,0,0.3)' : 'none',
-                                    transition: 'all 0.1s'
-                                }}>
+                                <div key={kIndex} style={keyStyle}>
                                     {k.key === 'Space' ? '' : k.key}
                                 </div>
                             );
@@ -184,6 +136,21 @@ const InstructionalUI = ({ activeChar }) => {
                     </div>
                 ))}
             </div>
+
+            {/* Helper Text */}
+            {activeChar && (
+                <div style={{
+                    marginTop: '20px',
+                    color: NEON_COLORS[getFingerForChar(activeChar)] || '#fff',
+                    textTransform: 'uppercase',
+                    letterSpacing: '2px',
+                    fontSize: '0.8rem',
+                    fontWeight: 'bold',
+                    textShadow: '0 0 10px currentColor'
+                }}>
+                    Use {FINGER_KEY_MAP[getFingerForChar(activeChar)] ? getFingerForChar(activeChar).replace('_', ' ') : 'Finger'}
+                </div>
+            )}
         </div>
     );
 };

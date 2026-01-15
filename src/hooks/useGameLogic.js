@@ -29,6 +29,11 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
     const [lives, setLives] = useState(3);
     const [aiProgress, setAiProgress] = useState(0);
 
+    // New State for Premium Features
+    const [combo, setCombo] = useState(0);
+    const [maxCombo, setMaxCombo] = useState(0);
+    const [rank, setRank] = useState(null); // 'Bronze', 'Silver', etc.
+
     // Config based on mode with defaults
     const config = useRef({
         timeLimit: 60,
@@ -41,7 +46,7 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
 
     const timerRef = useRef(null);
 
-    // Setup configuration based on gameMode and difficulty
+    // Setup configuration based on mode
     const setupConfig = (mode, diff) => {
         const difficulty = diff || 'beginner';
         const isBeginner = difficulty === 'beginner';
@@ -49,7 +54,7 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
 
         const baseConfig = {
             timeLimit: isBeginner ? 0 : 60,
-            allowErrors: isBeginner, // Beginner allows errors, advanced blocks or penalizes
+            allowErrors: isBeginner,
             showTimer: !isBeginner,
         };
 
@@ -59,14 +64,14 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
                     ...baseConfig,
                     type: 'word-rain',
                     wordList: isBeginner ? BEGINNER_WORDS : (isAdvanced ? EXPERT_WORDS : INTERMEDIATE_WORDS),
-                    fallSpeed: isBeginner ? 1 : (isAdvanced ? 3 : 2) // Added for UI
+                    fallSpeed: isBeginner ? 1 : (isAdvanced ? 3 : 2)
                 };
             case 'sentence':
                 return {
                     ...baseConfig,
                     type: 'sentence',
                     wordList: [],
-                    timeLimit: 0, // Sentences usually measured by completion time
+                    timeLimit: 0,
                     showTimer: true
                 };
             case 'survival':
@@ -117,6 +122,9 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
         setInputValue('');
         setCurrentWordIndex(0);
         setStats({ wpm: 0, accuracy: 100, mistakes: 0, correctChars: 0, totalChars: 0, missedKeys: {} });
+        setCombo(0);
+        setMaxCombo(0);
+        setRank(null);
         setLives(config.current.type === 'survival' ? (config.current.lives || 3) : 3);
         setAiProgress(0);
 
@@ -137,14 +145,12 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
         timerRef.current = setInterval(() => {
             setTime(prev => {
                 if (config.current.timeLimit > 0) {
-                    // Countdown
                     if (prev <= 1) {
                         endGame();
                         return 0;
                     }
                     return prev - 1;
                 } else {
-                    // Countup
                     return prev + 1;
                 }
             });
@@ -163,26 +169,60 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
         }, 1000);
     };
 
+    const calculateRank = (wpm) => {
+        if (wpm >= 90) return 'Diamond';
+        if (wpm >= 70) return 'Platinum';
+        if (wpm >= 50) return 'Gold';
+        if (wpm >= 30) return 'Silver';
+        return 'Bronze';
+    };
+
     const endGame = useCallback(async () => {
         clearInterval(timerRef.current);
         setIsPlaying(false);
         setIsGameOver(true);
 
-        // Save Result (skip for now or implement logic for modules)
-        const token = localStorage.getItem('token');
-        if (token && ['classic', 'survival', 'race', 'sentence'].includes(config.current.type)) {
-            // ... save logic ...
-        }
+        // Calculate final rank
+        // Note: WPM is calculated dynamically in render usually, so we recalculate here or rely on state update
+        // We'll calculate it based on stats state since `wpm` derived constant isn't available inside this callback closure easily without dependence
+        // Ideally pass it in, but for now let's do a quick calc:
+        // Or wait for effect? Let's just calculate logic here.
     }, []);
 
     const handleInput = (e) => {
         if (!isPlaying) return;
         const val = e.target.value;
+        const prevVal = inputValue;
+        const isDelete = val.length < prevVal.length;
         setInputValue(val);
 
         const currentTarget = words[currentWordIndex];
 
-        // Check Word Completion (Space or Exact match for last word)
+        // Combo Logic:
+        // If typing correctly character by character
+        if (!isDelete && val.length > prevVal.length) {
+            const charIndex = val.length - 1;
+            const expectedChar = currentTarget[charIndex] !== undefined ? currentTarget[charIndex] : ' ';
+
+            // Check if the newly typed char is correct (basic check, complex for mid-word)
+            // Actually, simplified: if the whole input currently matches prefix of word
+            if (currentTarget.startsWith(val.trim())) {
+                setCombo(prev => {
+                    const next = prev + 1;
+                    if (next > maxCombo) setMaxCombo(next);
+                    return next;
+                });
+            } else {
+                // Mistake made
+                setCombo(0);
+            }
+        } else if (isDelete) {
+            // Deleting doesn't reset combo necessarily, but let's say it effectively pauses or resets if they corrected a mistake
+            // Simpler arcade rule: Backspace breaks combo? Or just mistake?
+            // Let's stick to: Mistake breaks combo above. Backspace is neutral but combo broken on the error itself.
+        }
+
+        // Word Completion
         if (val.endsWith(' ') || (config.current.type === 'sentence' && val === currentTarget)) {
             const trimmedVal = val.trim();
 
@@ -190,7 +230,6 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
                 setCurrentWordIndex(prev => prev + 1);
                 setInputValue('');
 
-                // Word Refill Logic
                 if (currentWordIndex + 1 >= words.length) {
                     if (config.current.type === 'sentence' || config.current.type === 'race') {
                         endGame();
@@ -201,16 +240,19 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
             };
 
             if (trimmedVal === currentTarget) {
-                // Correct
+                // Correct Word
                 setStats(prev => ({
                     ...prev,
-                    correctChars: prev.correctChars + currentTarget.length + 1, // +space
+                    correctChars: prev.correctChars + currentTarget.length + 1,
                     totalChars: prev.totalChars + currentTarget.length + 1
                 }));
+                // Combo Bonus for Word Completion?
+                setCombo(prev => prev + 5);
                 advanceWord();
 
             } else {
-                // Mistake logic
+                // Mistake
+                setCombo(0); // Break combo
                 const targetChar = currentTarget[inputValue.length] || ' ';
                 setStats(prev => ({
                     ...prev,
@@ -222,15 +264,12 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
                     }
                 }));
 
-                // If allowErrors is TRUE, we mark mistake and move on
                 if (config.current.allowErrors) {
                     advanceWord();
                 } else {
-                    // Strict Mode: Block the Space input
                     setInputValue(prev => prev.trim());
                 }
 
-                // Survival Check
                 if (config.current.type === 'survival') {
                     setLives(prev => {
                         const newLives = prev - 1;
@@ -242,10 +281,17 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
         }
     };
 
-    // Derived Stats for Display
+    // Derived Stats
     const timeElapsed = config.current.timeLimit > 0 ? (config.current.timeLimit - time) : time;
     const wpm = Math.round((stats.correctChars / 5) / (Math.max(timeElapsed, 1) / 60) || 0);
     const accuracy = stats.totalChars > 0 ? Math.round((stats.correctChars / stats.totalChars) * 100) : 100;
+
+    // Determine Rank when game over
+    useEffect(() => {
+        if (isGameOver) {
+            setRank(calculateRank(wpm));
+        }
+    }, [isGameOver, wpm]);
 
     const saveResult = async () => {
         const token = localStorage.getItem('token');
@@ -277,6 +323,9 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
         isPlaying,
         isGameOver,
         stats: { ...stats, wpm, accuracy },
+        combo,
+        maxCombo,
+        rank,
         lives,
         aiProgress,
         startGame,

@@ -14,7 +14,7 @@ const PracticeSession = () => {
     const {
         words, inputValue, handleInput, time, isPlaying, isGameOver,
         stats, startGame, resetGame, currentWordIndex, config,
-        lives, aiProgress
+        lives, aiProgress, combo, maxCombo, rank
     } = useGameLogic(mode, difficulty);
 
     // Auto-start
@@ -29,95 +29,129 @@ const PracticeSession = () => {
     const nextChar = currentWord[nextCharIndex] || ' ';
 
     return (
-        <div className="practice-container">
-            {/* Header */}
-            <div className="session-header">
-                <button onClick={() => navigate('/practice')} className="btn-icon">
-                    ← Exit
-                </button>
-                <div className="session-info">
-                    <h2 style={{ textTransform: 'capitalize' }}>{mode} · {difficulty}</h2>
-                </div>
-                <div className="session-stats">
-                    {config.showTimer && <span className="stat-pill">{time}s</span>}
-                    <span className="stat-pill">{stats.wpm} WPM</span>
-                    {mode === 'survival' && <span className="stat-pill lives">Lives: {lives}</span>}
-                </div>
-            </div>
+        <div className="practice-container premium-layout">
+            {/* Background Effects */}
+            <div className="bg-glow-orb top-left"></div>
+            <div className="bg-glow-orb bottom-right"></div>
 
-            {/* Main Content */}
-            <main className="session-main">
+            {/* Premium HUD */}
+            <header className="game-hud">
+                <div className="hud-left">
+                    <button onClick={() => navigate('/game')} className="btn-icon back-btn">
+                        <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                    </button>
+                    <div className="mode-badge">
+                        <span className="dot"></span>
+                        {mode} <span style={{ opacity: 0.5 }}>|</span> {difficulty}
+                    </div>
+                </div>
+
+                <div className="hud-center">
+                    {config.showTimer && (
+                        <div className={`timer-display ${time < 10 ? 'danger' : ''}`}>
+                            {time}
+                        </div>
+                    )}
+                </div>
+
+                <div className="hud-right">
+                    <div className="stat-unit">
+                        <span className="label">WPM</span>
+                        <span className="value">{stats.wpm}</span>
+                    </div>
+                    <div className="stat-separator"></div>
+                    <div className="stat-unit">
+                        <span className="label">Combo</span>
+                        <span className="value highlight-combo">{combo}x</span>
+                    </div>
+                    {mode === 'survival' && (
+                        <>
+                            <div className="stat-separator"></div>
+                            <div className="stat-unit">
+                                <span className="label">Lives</span>
+                                <span className="value danger">{lives}</span>
+                            </div>
+                        </>
+                    )}
+                </div>
+            </header>
+
+            {/* Main Arena */}
+            <main className="game-arena">
                 {isGameOver ? (
-                    <ResultPanel stats={stats} onRetry={() => { resetGame(); startGame(); }} />
+                    <ResultPanel stats={stats} rank={rank} maxCombo={maxCombo} onRetry={() => { resetGame(); startGame(); }} />
                 ) : (
                     <>
+                        {/* Race Mode Track */}
+                        {mode === 'race' && (
+                            <div className="race-track-premium">
+                                <div className="track-lane">
+                                    <div className="racer-avatar user" style={{ left: `${(currentWordIndex / words.length) * 100}%` }}>
+                                        YOU
+                                    </div>
+                                    <div className="progress-line user" style={{ width: `${(currentWordIndex / words.length) * 100}%` }}></div>
+                                </div>
+                                <div className="track-lane">
+                                    <div className="racer-avatar cpu" style={{ left: `${aiProgress}%` }}>
+                                        CPU
+                                    </div>
+                                    <div className="progress-line cpu" style={{ width: `${aiProgress}%` }}></div>
+                                </div>
+                            </div>
+                        )}
+
                         <input
                             type="text"
                             value={inputValue}
                             onChange={handleInput}
                             autoFocus
                             className="hidden-input"
+                            onBlur={(e) => e.target.focus()} // Keep focus
                         />
 
-                        {/* Race Mode UI */}
-                        {mode === 'race' && (
-                            <div className="race-track">
-                                <div className="racer" style={{ width: `${(currentWordIndex / words.length) * 100}%`, background: 'var(--primary)' }}>
-                                    You 🚗
+                        {/* Typing Area */}
+                        <div className="typing-display-wrapper">
+                            {mode === 'word-rain' ? (
+                                <div className="word-rain-view placeholder">
+                                    <h3>Constructing Atmosphere...</h3>
+                                    <p>(Rain Mode Visualization Coming Soon)</p>
                                 </div>
-                                <div className="racer opponent" style={{ width: `${aiProgress}%`, background: 'var(--secondary)' }}>
-                                    CPU 🏎️
-                                </div>
-                            </div>
-                        )}
+                            ) : (
+                                <div className="word-stream-premium">
+                                    {/* Scroll wrapper logic would be needed for many words, for now we slice around current */}
+                                    <div className="words-track">
+                                        {words.slice(Math.max(0, currentWordIndex - 2), currentWordIndex + 10).map((w, i) => {
+                                            const realIndex = Math.max(0, currentWordIndex - 2) + i;
+                                            const isCurrent = realIndex === currentWordIndex;
+                                            const isPast = realIndex < currentWordIndex;
 
-                        {/* Word Rain UI (Simplified as scrolling list for now, or could vary) */}
-                        {mode === 'word-rain' ? (
-                            <div className="word-rain-view">
-                                {/* Future: Canvas implementation. Current: Vertical Stack */}
-                                <div style={{ textAlign: 'center', fontSize: '2rem' }}>
-                                    Coming Soon: Rain Animation
-                                </div>
-                            </div>
-                        ) : (
-                            /* Standard / Sentence View */
-                            <div className="typing-area">
-                                {mode === 'sentence' ? (
-                                    <div className="sentence-view">
-                                        {words.join(' ').split('').map((char, idx) => {
-                                            // Mapping whole sentence logic is complex with word-based hook.
-                                            // Fallback to word-by-word for now for 'sentence' too in this hook version.
-                                            return <span key={idx}>{char}</span>
+                                            return (
+                                                <div key={realIndex} className={`word-unit ${isCurrent ? 'active' : ''} ${isPast ? 'past' : ''}`}>
+                                                    {isCurrent ? (
+                                                        w.split('').map((char, idx) => {
+                                                            let status = 'pending';
+                                                            if (idx < inputValue.length) {
+                                                                status = inputValue[idx] === char ? 'correct' : 'incorrect';
+                                                            } else if (idx === inputValue.length) {
+                                                                status = 'caret';
+                                                            }
+                                                            return <span key={idx} className={`char ${status}`}>{char}</span>
+                                                        })
+                                                    ) : (
+                                                        w
+                                                    )}
+                                                </div>
+                                            );
                                         })}
-                                        {/* Actually, the hook is word-based. Let's stick to word display. */}
                                     </div>
-                                ) : null}
-
-                                {/* Focused Word Display (Universal) */}
-                                <div className="word-stream">
-                                    {words.slice(currentWordIndex, currentWordIndex + 15).map((w, i) => {
-                                        const isCurrent = i === 0;
-                                        return (
-                                            <span key={i} className={`word ${isCurrent ? 'active' : ''}`}>
-                                                {isCurrent ? (
-                                                    w.split('').map((char, idx) => {
-                                                        let color = 'var(--text-muted)';
-                                                        if (idx < inputValue.length) {
-                                                            color = inputValue[idx] === char ? 'var(--success)' : 'var(--error)';
-                                                        } else if (idx === inputValue.length) {
-                                                            color = 'var(--primary)'; // Cursor char
-                                                        }
-                                                        return <span key={idx} style={{ color }}>{char}</span>
-                                                    })
-                                                ) : w}
-                                            </span>
-                                        );
-                                    })}
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
 
-                        <div className="instructional-footer">
+                        {/* Keyboard */}
+                        <div className="keyboard-footer-wrapper">
                             <InstructionalUI activeChar={nextChar} />
                         </div>
                     </>
