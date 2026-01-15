@@ -14,19 +14,30 @@ const PracticeSession = () => {
     const {
         words, inputValue, handleInput, time, isPlaying, isGameOver,
         stats, startGame, resetGame, currentWordIndex, config,
-        lives, aiProgress, combo, maxCombo, rank
+        lives, aiProgress, combo, maxCombo, rank, isLoading
     } = useGameLogic(mode, difficulty);
 
     // Auto-start
     useEffect(() => {
-        if (!isPlaying && !isGameOver) {
+        if (!isPlaying && !isGameOver && !isLoading) {
             startGame();
         }
-    }, [isPlaying, isGameOver]);
+    }, [isPlaying, isGameOver, isLoading]);
 
     const currentWord = words[currentWordIndex] || '';
     const nextCharIndex = inputValue.length;
     const nextChar = currentWord[nextCharIndex] || ' ';
+
+    if (isLoading) {
+        return (
+            <div className="practice-container premium-layout" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                <div className="loading-spinner">
+                    <div className="spinner-ring"></div>
+                    <p style={{ marginTop: '1rem', color: 'var(--primary)' }}>Fetching Content...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="practice-container premium-layout">
@@ -37,14 +48,14 @@ const PracticeSession = () => {
             {/* Premium HUD */}
             <header className="game-hud">
                 <div className="hud-left">
-                    <button onClick={() => navigate('/game')} className="btn-icon back-btn">
+                    <button onClick={() => navigate('/practice')} className="btn-icon back-btn">
                         <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                         </svg>
                     </button>
                     <div className="mode-badge">
                         <span className="dot"></span>
-                        {mode} <span style={{ opacity: 0.5 }}>|</span> {difficulty}
+                        {config.type.replace('practice-', '').replace('-', ' ').toUpperCase()}
                     </div>
                 </div>
 
@@ -81,7 +92,7 @@ const PracticeSession = () => {
             {/* Main Arena */}
             <main className="game-arena">
                 {isGameOver ? (
-                    <ResultPanel stats={stats} rank={rank} maxCombo={maxCombo} onRetry={() => { resetGame(); startGame(); }} />
+                    <ResultPanel stats={stats} rank={rank} maxCombo={maxCombo} onRetry={() => { resetGame(); }} />
                 ) : (
                     <>
                         {/* Race Mode Track */}
@@ -120,7 +131,7 @@ const PracticeSession = () => {
                                 </div>
                             ) : (
                                 <div className="word-stream-premium">
-                                    {/* Scroll wrapper logic would be needed for many words, for now we slice around current */}
+                                    {/* Focus on current word with context */}
                                     <div className="words-track">
                                         {words.slice(Math.max(0, currentWordIndex - 2), currentWordIndex + 10).map((w, i) => {
                                             const realIndex = Math.max(0, currentWordIndex - 2) + i;
@@ -158,6 +169,7 @@ const PracticeSession = () => {
                 )}
             </main>
         </div>
+        
     );
 };
 

@@ -4,23 +4,30 @@ import InstructionalUI from '../components/InstructionalUI';
 
 const MODULES = [
     {
-        id: 'practice-word',
-        title: '1. Word Practice',
-        description: 'Master basic keystrokes with common words.',
+        id: 'practice-2-letter',
+        title: '1. Two-Letter Words',
+        description: 'Master short words like "it", "at", "to" for rhythm.',
         color: '#00f2ea', // Cyan
-        icon: '📝'
+        icon: 'ab'
+    },
+    {
+        id: 'practice-3-letter',
+        title: '2. Three-Letter Words',
+        description: 'Practice common trigrams like "the", "and", "for".',
+        color: '#00c2ff', // Blue-Cyan
+        icon: 'abc'
     },
     {
         id: 'practice-capital',
-        title: '2. Capital Letter Practice',
-        description: 'Train your Shift key timing and cross-hand coordination.',
+        title: '3. Capital Letters',
+        description: 'Train your Shift key timing and precision.',
         color: '#ff0055', // Pink
         icon: '⇧'
     },
     {
         id: 'practice-paragraph',
-        title: '3. Paragraph Practice',
-        description: 'Build endurance with real sentences and punctuation.',
+        title: '4. Paragraph Practice',
+        description: 'Build endurance with real context and sentences.',
         color: '#00ff66', // Green
         icon: '¶'
     }
@@ -30,7 +37,32 @@ const Practice = () => {
     const navigate = useNavigate();
 
     return (
-        <div style={{ padding: '3rem', maxWidth: '1200px', margin: '0 auto' }}>
+        <div style={{ padding: '3rem', maxWidth: '1200px', margin: '0 auto', position: 'relative' }}>
+            <button
+                onClick={() => navigate('/')}
+                style={{
+                    position: 'absolute',
+                    top: '0rem', /* Adjusted to align better with heading or top left */
+                    left: '0',
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer',
+                    padding: '1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'color 0.2s'
+                }}
+                onMouseOver={(e) => e.currentTarget.style.color = 'var(--primary)'}
+                onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
+                title="Back to Home"
+            >
+                <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+            </button>
+
             <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
                 <h1 style={{ fontSize: '3rem', fontWeight: '900', marginBottom: '1rem' }}>
                     Structured <span style={{ color: 'var(--primary)' }}>Practice</span>
@@ -65,18 +97,25 @@ const Practice = () => {
                         <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{module.title}</h3>
                         <p style={{ color: 'var(--text-muted)', marginBottom: '2rem', height: '3rem' }}>{module.description}</p>
 
-                        <div style={{ display: 'flex', gap: '10px' }}>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                             <button
-                                onClick={() => navigate(`/practice-session?mode=${module.id}&difficulty=beginner`)}
+                                onClick={() => navigate(`/practice-session?mode=${module.id}&difficulty=basic`)}
                                 className="btn"
-                                style={{ flex: 1, border: `1px solid ${module.color}`, color: module.color, background: 'transparent' }}
+                                style={{ flex: 1, border: `1px solid ${module.color}`, color: module.color, background: 'transparent', padding: '0.5rem', fontSize: '0.9rem' }}
                             >
-                                Beginner
+                                Basic
+                            </button>
+                            <button
+                                onClick={() => navigate(`/practice-session?mode=${module.id}&difficulty=intermediate`)}
+                                className="btn"
+                                style={{ flex: 1, border: `1px solid ${module.color}`, color: module.color, background: 'transparent', padding: '0.5rem', fontSize: '0.9rem' }}
+                            >
+                                Intermediate
                             </button>
                             <button
                                 onClick={() => navigate(`/practice-session?mode=${module.id}&difficulty=advanced`)}
                                 className="btn"
-                                style={{ flex: 1, background: module.color, color: '#000', fontWeight: 'bold' }}
+                                style={{ flex: 1, background: module.color, color: '#000', fontWeight: 'bold', padding: '0.5rem', fontSize: '0.9rem' }}
                             >
                                 Advanced
                             </button>

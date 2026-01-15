@@ -1,33 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
+import { fetchWords, fetchCapitals, fetchParagraphs } from '../services/typingService';
 import { BEGINNER_WORDS, ELEMENTARY_WORDS, INTERMEDIATE_WORDS, ADVANCED_WORDS, EXPERT_WORDS } from '../utils/wordLists';
-
-const WORD_BANK = [
-    "the", "be", "to", "of", "and", "a", "in", "that", "have", "I", "it", "for", "not", "on", "with", "he", "as", "you", "do", "at",
-    "this", "but", "his", "by", "from", "they", "we", "say", "her", "she", "or", "an", "will", "my", "one", "all", "would", "there",
-    "their", "what", "about", "which", "when", "make", "like", "time", "just", "know", "take", "people", "year", "good", "some", "could",
-    "see", "other", "than", "then", "now", "look", "only", "come", "its", "over", "think", "also", "back", "after", "use", "two",
-    "how", "our", "work", "first", "well", "way", "even", "new", "want", "because"
-];
-
-const SENTENCES = [
-    "The quick brown fox jumps over the lazy dog.",
-    "Pack my box with five dozen liquor jugs.",
-    "How vexingly quick daft zebras jump!",
-    "Sphinx of black quartz, judge my vow.",
-    "Two driven jocks help fax my big quiz."
-];
-
-const CAPITAL_WORDS = [
-    "React", "JavaScript", "HTML", "CSS", "NodeJS", "Python", "Java", "Docker", "Alice", "Bob", "New York", "Paris", "London", "Google", "Amazon",
-    "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "January", "February", "March", "April", "May", "June", "Earth", "Mars", "Jupiter"
-];
-
-const PARAGRAPHS = [
-    "The quick brown fox jumps over the lazy dog. It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout.",
-    "In the world of software development, typing speed is a superpower. It allows you to translate thoughts into code with minimal friction.",
-    "Typing properly requires posture and patience. Keep your back straight, feet flat on the floor, and wrists elevated above the keyboard."
-];
 
 export const useGameLogic = (gameMode, difficulty = 'beginner') => {
     const [isPlaying, setIsPlaying] = useState(false);
@@ -39,6 +13,7 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
     const [stats, setStats] = useState({ wpm: 0, accuracy: 100, mistakes: 0, correctChars: 0, totalChars: 0, missedKeys: {} });
     const [lives, setLives] = useState(3);
     const [aiProgress, setAiProgress] = useState(0);
+    const [isLoading, setIsLoading] = useState(true);
 
     // New State for Premium Features
     const [combo, setCombo] = useState(0);
@@ -49,7 +24,7 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
     const config = useRef({
         timeLimit: 60,
         type: 'classic',
-        wordList: WORD_BANK,
+        wordList: [],
         allowErrors: false,
         showTimer: true,
         penalty: false,
@@ -70,11 +45,24 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
         };
 
         switch (mode) {
+            case 'practice-2-letter':
+                return {
+                    ...baseConfig,
+                    type: 'practice-2-letter',
+                    timeLimit: 0,
+                    showTimer: true
+                };
+            case 'practice-3-letter':
+                return {
+                    ...baseConfig,
+                    type: 'practice-3-letter',
+                    timeLimit: 0,
+                    showTimer: true
+                };
             case 'practice-capital':
                 return {
                     ...baseConfig,
                     type: 'practice-capital',
-                    wordList: CAPITAL_WORDS, // Use the new CAPITAL_WORDS list
                     timeLimit: 0,
                     showTimer: true
                 };
@@ -82,21 +70,14 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
                 return {
                     ...baseConfig,
                     type: 'practice-paragraph',
-                    wordList: [], // Will load Paragraphs logic in reset
                     timeLimit: 0,
                     showTimer: true
-                };
-            case 'practice-word':
-                return {
-                    ...baseConfig,
-                    type: 'practice-word',
-                    wordList: isBeginner ? BEGINNER_WORDS : INTERMEDIATE_WORDS,
-                    timeLimit: 0
                 };
             case 'word-rain':
                 return {
                     ...baseConfig,
                     type: 'word-rain',
+                    // Fallback wordlist if needed strictly for fallback, but we should aim to fetch
                     wordList: isBeginner ? BEGINNER_WORDS : (isAdvanced ? EXPERT_WORDS : INTERMEDIATE_WORDS),
                     fallSpeed: isBeginner ? 1 : (isAdvanced ? 3 : 2)
                 };
@@ -104,7 +85,6 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
                 return {
                     ...baseConfig,
                     type: 'sentence',
-                    wordList: [],
                     timeLimit: 0,
                     showTimer: true
                 };
@@ -112,7 +92,7 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
                 return {
                     ...baseConfig,
                     type: 'survival',
-                    wordList: WORD_BANK,
+                    wordList: BEGINNER_WORDS, // Simplified for now
                     lives: isBeginner ? 10 : 3,
                     penalty: true
                 };
@@ -120,7 +100,7 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
                 return {
                     ...baseConfig,
                     type: 'race',
-                    wordList: WORD_BANK,
+                    wordList: BEGINNER_WORDS,
                     aiSpeed: isBeginner ? 2 : (isAdvanced ? 8 : 5)
                 };
             case 'classic':
@@ -133,16 +113,52 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
         }
     };
 
-    useEffect(() => {
-        config.current = setupConfig(gameMode, difficulty);
-        resetGame();
+    const loadContent = async () => {
+        setIsLoading(true);
+        try {
+            let data = [];
+            const type = config.current.type;
 
-        return () => {
-            if (timerRef.current) clearInterval(timerRef.current);
-        };
-    }, [gameMode, difficulty]);
+            if (type === 'practice-2-letter') {
+                data = await fetchWords(2);
+            } else if (type === 'practice-3-letter') {
+                data = await fetchWords(3);
+            } else if (type === 'practice-capital') {
+                data = await fetchCapitals(difficulty);
+            } else if (type === 'practice-paragraph') {
+                const paragraphs = await fetchParagraphs(difficulty);
+                // Paragraphs need to be split into words for the engine, or handled as a single block
+                // Engine expects array of words. Let's send the first paragraph split by spaces.
+                if (paragraphs && paragraphs.length > 0) {
+                    data = paragraphs[0].text.split(' ');
+                }
+            } else {
+                // Fallback for other modes not explicitly backend-driven yet or mixed
+                // For now, if wordList is empty in config, we might want to fetch general words
+                if (config.current.wordList && config.current.wordList.length === 0) {
+                    // data = await fetchWords(4); // Default length? No, rely on fallback lists if any
+                } else if (config.current.wordList) {
+                    data = getRandomWords(50, config.current.wordList);
+                }
+            }
 
-    const getRandomWords = (count, sourceList = WORD_BANK) => {
+            if (!data || data.length === 0) {
+                // Emergency fallback
+                data = ['loading', 'failed', 'please', 'retry'];
+            }
+
+            setWords(data);
+
+        } catch (error) {
+            console.error("Failed to fetch content", error);
+            setWords(['error', 'fetching', 'data']);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const getRandomWords = (count, sourceList) => {
+        if (!sourceList || sourceList.length === 0) return ['no', 'words'];
         let res = [];
         for (let i = 0; i < count; i++) {
             res.push(sourceList[Math.floor(Math.random() * sourceList.length)]);
@@ -150,7 +166,7 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
         return res;
     };
 
-    const resetGame = useCallback(() => {
+    const resetGame = useCallback(async () => {
         setIsPlaying(false);
         setIsGameOver(false);
         setInputValue('');
@@ -162,21 +178,24 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
         setLives(config.current.type === 'survival' ? (config.current.lives || 3) : 3);
         setAiProgress(0);
 
-        if (config.current.type === 'sentence') {
-            setWords(SENTENCES[Math.floor(Math.random() * SENTENCES.length)].split(' '));
-        } else if (config.current.type === 'practice-paragraph') {
-            // Paragraph logic
-            setWords(PARAGRAPHS[Math.floor(Math.random() * PARAGRAPHS.length)].split(' '));
-        } else {
-            setWords(getRandomWords(50, config.current.wordList));
-        }
-
         setTime(config.current.timeLimit || 0);
         if (timerRef.current) clearInterval(timerRef.current);
+
+        await loadContent();
+
     }, []);
 
-    const startGame = () => {
+    useEffect(() => {
+        config.current = setupConfig(gameMode, difficulty);
         resetGame();
+
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+        };
+    }, [gameMode, difficulty]);
+
+    const startGame = () => {
+        if (isLoading) return;
         setIsPlaying(true);
 
         timerRef.current = setInterval(() => {
@@ -218,21 +237,20 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
         clearInterval(timerRef.current);
         setIsPlaying(false);
         setIsGameOver(true);
-        // Rank calc happens in effect
     }, []);
 
     const handleInput = (e) => {
-        if (!isPlaying) return;
+        if (!isPlaying || isLoading) return;
         const val = e.target.value;
         const prevVal = inputValue;
         const isDelete = val.length < prevVal.length;
         setInputValue(val);
 
         const currentTarget = words[currentWordIndex];
+        if (!currentTarget) return; // Guard
 
         // Combo Logic:
         if (!isDelete && val.length > prevVal.length) {
-            const charIndex = val.length - 1;
             // Check prefix
             if (currentTarget.startsWith(val.trim())) {
                 setCombo(prev => {
@@ -257,7 +275,15 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
                     if (config.current.type === 'sentence' || config.current.type === 'race' || config.current.type === 'practice-paragraph') {
                         endGame();
                     } else {
-                        setWords(prev => [...prev, ...getRandomWords(10, config.current.wordList)]);
+                        // Resupply words if continuous mode
+                        // For API modes, do we refetch? Or loop?
+                        // Let's loop the content or just end it for practice modes
+                        if (['practice-2-letter', 'practice-3-letter', 'practice-capital'].includes(config.current.type)) {
+                            setWords(prev => [...prev, ...prev]); // Duplicate list or refetch? Duplicating is safer for keeping flow
+                        } else {
+                            // Classic behavior
+                            endGame();
+                        }
                     }
                 }
             };
@@ -309,7 +335,6 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
     const wpm = Math.round((stats.correctChars / 5) / (Math.max(timeElapsed, 1) / 60) || 0);
     const accuracy = stats.totalChars > 0 ? Math.round((stats.correctChars / stats.totalChars) * 100) : 100;
 
-    // Determine Rank when game over
     useEffect(() => {
         if (isGameOver) {
             setRank(calculateRank(wpm));
@@ -318,6 +343,7 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
 
     const saveResult = async () => {
         const token = localStorage.getItem('token');
+        if (!token) return;
         try {
             await axios.post(`${import.meta.env.VITE_API_URL}/api/results`, {
                 gameType: config.current.type,
@@ -354,6 +380,7 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
         startGame,
         resetGame,
         currentWordIndex,
-        config: config.current
+        config: config.current,
+        isLoading
     };
 };
