@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
+import { BEGINNER_WORDS, ELEMENTARY_WORDS, INTERMEDIATE_WORDS, ADVANCED_WORDS, EXPERT_WORDS } from '../utils/wordLists';
 
 const WORD_BANK = [
     "the", "be", "to", "of", "and", "a", "in", "that", "have", "I", "it", "for", "not", "on", "with", "he", "as", "you", "do", "at",
@@ -24,23 +25,48 @@ export const useGameLogic = (gameMode) => {
     const [inputValue, setInputValue] = useState('');
     const [currentWordIndex, setCurrentWordIndex] = useState(0);
     const [time, setTime] = useState(0);
-    const [stats, setStats] = useState({ wpm: 0, accuracy: 100, mistakes: 0, correctChars: 0, totalChars: 0 });
+    const [stats, setStats] = useState({ wpm: 0, accuracy: 100, mistakes: 0, correctChars: 0, totalChars: 0, missedKeys: {} });
     const [lives, setLives] = useState(3);
     const [aiProgress, setAiProgress] = useState(0);
 
-    // Config based on mode
+    // Config based on mode with defaults
     const config = useRef({
-        timeLimit: gameMode === 'classic' ? 60 : 0,
-        type: gameMode || 'classic'
+        timeLimit: 60,
+        type: 'classic',
+        wordList: WORD_BANK,
+        allowErrors: false, // if false, can't proceed until corrected (strict) vs leniency
+        showTimer: true,
+        penalty: false,
     });
 
     const timerRef = useRef(null);
 
+    // Setup configuration based on gameMode
+    const setupConfig = (mode) => {
+        switch (mode) {
+            case 'beginner':
+                return { timeLimit: 0, type: 'beginner', wordList: BEGINNER_WORDS, allowErrors: true, showTimer: false, penalty: false };
+            case 'elementary':
+                return { timeLimit: 0, type: 'elementary', wordList: ELEMENTARY_WORDS, allowErrors: true, showTimer: false, penalty: false };
+            case 'intermediate':
+                return { timeLimit: 60, type: 'intermediate', wordList: INTERMEDIATE_WORDS, allowErrors: true, showTimer: true, penalty: false };
+            case 'advanced':
+                return { timeLimit: 60, type: 'advanced', wordList: ADVANCED_WORDS, allowErrors: true, showTimer: true, penalty: false };
+            case 'expert':
+                return { timeLimit: 0, type: 'expert', wordList: EXPERT_WORDS, allowErrors: true, showTimer: true, penalty: false };
+            case 'survival':
+                return { timeLimit: 0, type: 'survival', wordList: WORD_BANK, allowErrors: false, showTimer: true, penalty: true };
+            case 'sentence':
+                return { timeLimit: 0, type: 'sentence', wordList: [], allowErrors: false, showTimer: true, penalty: false };
+            case 'race':
+                return { timeLimit: 0, type: 'race', wordList: WORD_BANK, allowErrors: true, showTimer: true, penalty: false };
+            default: // classic
+                return { timeLimit: 60, type: 'classic', wordList: WORD_BANK, allowErrors: true, showTimer: true, penalty: false };
+        }
+    };
+
     useEffect(() => {
-        config.current = {
-            timeLimit: gameMode === 'classic' ? 60 : 0,
-            type: gameMode || 'classic'
-        };
+        config.current = setupConfig(gameMode);
         resetGame();
 
         return () => {
@@ -48,10 +74,10 @@ export const useGameLogic = (gameMode) => {
         };
     }, [gameMode]);
 
-    const getRandomWords = (count) => {
+    const getRandomWords = (count, sourceList = WORD_BANK) => {
         let res = [];
         for (let i = 0; i < count; i++) {
-            res.push(WORD_BANK[Math.floor(Math.random() * WORD_BANK.length)]);
+            res.push(sourceList[Math.floor(Math.random() * sourceList.length)]);
         }
         return res;
     };
@@ -61,14 +87,14 @@ export const useGameLogic = (gameMode) => {
         setIsGameOver(false);
         setInputValue('');
         setCurrentWordIndex(0);
-        setStats({ wpm: 0, accuracy: 100, mistakes: 0, correctChars: 0, totalChars: 0 });
+        setStats({ wpm: 0, accuracy: 100, mistakes: 0, correctChars: 0, totalChars: 0, missedKeys: {} });
         setLives(config.current.type === 'survival' ? 5 : 3);
         setAiProgress(0);
 
         if (config.current.type === 'sentence') {
             setWords(SENTENCES[Math.floor(Math.random() * SENTENCES.length)].split(' '));
         } else {
-            setWords(getRandomWords(50));
+            setWords(getRandomWords(50, config.current.wordList));
         }
 
         setTime(config.current.timeLimit || 0);
@@ -81,13 +107,15 @@ export const useGameLogic = (gameMode) => {
 
         timerRef.current = setInterval(() => {
             setTime(prev => {
-                if (config.current.timeLimit) {
+                if (config.current.timeLimit > 0) {
+                    // Countdown
                     if (prev <= 1) {
                         endGame();
                         return 0;
                     }
                     return prev - 1;
                 } else {
+                    // Countup
                     return prev + 1;
                 }
             });
@@ -110,16 +138,10 @@ export const useGameLogic = (gameMode) => {
         setIsPlaying(false);
         setIsGameOver(true);
 
-        // Save Result
+        // Save Result (skip for now or implement logic for modules)
         const token = localStorage.getItem('token');
-        if (token) {
-            try {
-                // Calculate final WPM/Acc just in case
-                // NOTE: Use refs or passed vars if state isn't updated? 
-                // We'll use current state. (Might be slightly stale if inside interval, but acceptable)
-            } catch (err) {
-                console.error(err);
-            }
+        if (token && ['classic', 'survival', 'race', 'sentence'].includes(config.current.type)) { // Only save for main games for now
+            // ... save logic ...
         }
     }, []);
 
@@ -134,6 +156,20 @@ export const useGameLogic = (gameMode) => {
         if (val.endsWith(' ') || (config.current.type === 'sentence' && val === currentTarget)) {
             const trimmedVal = val.trim();
 
+            const advanceWord = () => {
+                setCurrentWordIndex(prev => prev + 1);
+                setInputValue('');
+
+                // Word Refill Logic
+                if (currentWordIndex + 1 >= words.length) {
+                    if (config.current.type === 'sentence' || config.current.type === 'race') {
+                        endGame();
+                    } else {
+                        setWords(prev => [...prev, ...getRandomWords(10, config.current.wordList)]);
+                    }
+                }
+            };
+
             if (trimmedVal === currentTarget) {
                 // Correct
                 setStats(prev => ({
@@ -141,26 +177,32 @@ export const useGameLogic = (gameMode) => {
                     correctChars: prev.correctChars + currentTarget.length + 1, // +space
                     totalChars: prev.totalChars + currentTarget.length + 1
                 }));
-                setCurrentWordIndex(prev => prev + 1);
-                setInputValue('');
-
-                // Check Game Over / Level Up
-                if (currentWordIndex + 1 >= words.length) {
-                    if (config.current.type === 'sentence' || config.current.type === 'race') {
-                        endGame();
-                    } else {
-                        setWords(prev => [...prev, ...getRandomWords(10)]);
-                    }
-                }
+                advanceWord();
 
             } else {
-                // Mistake
+                // Mistake logic
+                const targetChar = currentTarget[inputValue.length] || ' ';
                 setStats(prev => ({
                     ...prev,
-                    mistakes: prev.mistakes + 1,
-                    totalChars: prev.totalChars + trimmedVal.length + 1
+                    mistakes: prev.mistakes + 1, // Count 1 mistake for the word submission error
+                    totalChars: prev.totalChars + trimmedVal.length + 1,
+                    missedKeys: {
+                        ...prev.missedKeys,
+                        [targetChar]: (prev.missedKeys?.[targetChar] || 0) + 1
+                    }
                 }));
-                // Survival Mode
+
+                // If allowErrors is TRUE, we mark mistake and move on
+                if (config.current.allowErrors) {
+                    advanceWord();
+                } else {
+                    // Strict Mode: Block the Space input
+                    // Remove the trailing space so user feels "blocked" at the end of the word
+                    setInputValue(prev => prev.trim());
+                    // Optionally visual feedback could be triggered here
+                }
+
+                // Survival Check
                 if (config.current.type === 'survival') {
                     setLives(prev => {
                         if (prev <= 1) endGame();
@@ -169,15 +211,12 @@ export const useGameLogic = (gameMode) => {
                 }
             }
         }
-
-        // Calculate WPM/Accuracy realtime
-        // Time elapsed?
-        // Simple calc:
-        // WPM = (correctChars / 5) / (minutes elapsed)
     };
 
     // Derived Stats for Display
-    const wpm = Math.round((stats.correctChars / 5) / (config.current.timeLimit ? (60 - time) / 60 : Math.max(time, 1) / 60) || 0);
+    // Avoid division by zero
+    const timeElapsed = config.current.timeLimit > 0 ? (config.current.timeLimit - time) : time;
+    const wpm = Math.round((stats.correctChars / 5) / (Math.max(timeElapsed, 1) / 60) || 0);
     const accuracy = stats.totalChars > 0 ? Math.round((stats.correctChars / stats.totalChars) * 100) : 100;
 
     const saveResult = async () => {
@@ -214,6 +253,7 @@ export const useGameLogic = (gameMode) => {
         aiProgress,
         startGame,
         resetGame,
-        currentWordIndex
+        currentWordIndex,
+        config: config.current // Export config for UI adjustments
     };
 };
