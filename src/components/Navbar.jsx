@@ -1,29 +1,29 @@
-import { Link } from 'react-router-dom';
+import { NavLink, Link, useLocation } from 'react-router-dom';
 import { useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 
 const Navbar = () => {
     const { user, logout } = useContext(AuthContext);
-    const location = window.location.pathname;
+    const location = useLocation();
 
-    if (location === '/practice-session') return null;
+    if (location.pathname === '/practice-session') return null;
 
     return (
         <nav className="navbar">
             <Link to="/" className="logo">Typing<span>Master</span></Link>
             <div className="nav-links">
-                <Link to="/">Home</Link>
-                <Link to="/practice">Practice</Link>
-                <Link to="/game">Games</Link>
+                <NavLink to="/" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>Home</NavLink>
+                <NavLink to="/practice" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>Practice</NavLink>
+                <NavLink to="/game" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>Games</NavLink>
                 {user ? (
                     <>
-                        <Link to="/report">Reports</Link>
-                        <a href="#" onClick={logout}>Logout</a>
+                        <NavLink to="/report" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>Reports</NavLink>
+                        <a href="#" onClick={logout} className="nav-link">Logout</a>
                     </>
                 ) : (
                     <>
-                        <Link to="/login">Login</Link>
-                        <Link to="/register">Register</Link>
+                        <NavLink to="/login" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>Login</NavLink>
+                        <NavLink to="/register" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>Register</NavLink>
                     </>
                 )}
             </div>

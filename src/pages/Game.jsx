@@ -6,36 +6,36 @@ const GAME_MODES = [
         id: 'classic',
         title: 'Classic',
         description: 'Standard typing practice. Focus on accuracy and speed.',
-        color: 'linear-gradient(135deg, #00f2ea 0%, #00c6be 100%)',
-        levels: ['beginner', 'intermediate', 'advanced']
+        color: '#00f2ea',
+        levels: ['basic', 'intermediate', 'advanced']
     },
     {
         id: 'word-rain',
         title: 'Word Rain',
         description: 'Type falling words before they hit the bottom!',
-        color: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-        levels: ['beginner', 'intermediate', 'advanced']
+        color: '#4facfe',
+        levels: ['basic', 'intermediate', 'advanced']
     },
     {
         id: 'sentence',
         title: 'Sentence',
         description: 'Practice with full sentences and punctuation.',
-        color: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-        levels: ['beginner', 'intermediate', 'advanced']
+        color: '#43e97b',
+        levels: ['basic', 'intermediate', 'advanced']
     },
     {
         id: 'survival',
         title: 'Survival',
         description: 'Don\'t make mistakes! Lives are limited.',
-        color: 'linear-gradient(135deg, #ff0844 0%, #ffb199 100%)',
-        levels: ['beginner', 'intermediate', 'advanced']
+        color: '#ff0844',
+        levels: ['basic', 'intermediate', 'advanced']
     },
     {
         id: 'race',
         title: 'Race',
         description: 'Compete against an AI opponent to the finish line.',
-        color: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-        levels: ['beginner', 'intermediate', 'advanced']
+        color: '#fa709a',
+        levels: ['basic', 'intermediate', 'advanced']
     }
 ];
 
@@ -47,43 +47,65 @@ const Game = () => {
     };
 
     return (
-        <div className="dashboard-container">
-            <div style={{ textAlign: 'center', marginBottom: '4rem', paddingTop: '2rem' }}>
-                <h1 style={{ color: 'var(--text-main)', marginBottom: '1rem', fontSize: '3rem', fontWeight: 800 }}>Game Modes</h1>
-                <p style={{ color: 'var(--text-muted)', fontSize: '1.2rem', maxWidth: '600px', margin: '0 auto' }}>
+        <div style={{ padding: '3rem', maxWidth: '1200px', margin: '0 auto', position: 'relative' }}>
+            <button
+                onClick={() => navigate('/')}
+                style={{
+                    position: 'absolute',
+                    top: '0rem',
+                    left: '0',
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer',
+                    padding: '1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'color 0.2s'
+                }}
+                onMouseOver={(e) => e.currentTarget.style.color = 'var(--primary)'}
+                onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
+                title="Back to Home"
+                
+            >
+                <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+            </button>
+
+            <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
+                <h1 style={{ fontSize: '3rem', fontWeight: '900', marginBottom: '1rem' }}>
+                    Game <span style={{ color: 'var(--primary)' }}>Modes</span>
+                </h1>
+                <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto' }}>
                     Select a game mode to test your speed and accuracy.
                 </p>
             </div>
 
-            <div className="game-modes-grid">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', marginBottom: '4rem' }}>
                 {GAME_MODES.map(mode => (
-                    <div key={mode.id} className="game-mode-card" style={{
-                        background: 'var(--bg-card)',
-                        borderRadius: '20px',
+                    <div key={mode.id} className="module-card" style={{
+                        background: 'linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)',
+                        border: '1px solid rgba(255,255,255,0.05)',
+                        borderRadius: '16px',
                         padding: '2rem',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'space-between',
-                        minHeight: '280px',
                         position: 'relative',
                         overflow: 'hidden',
-                        border: '1px solid rgba(255,255,255,0.05)'
+                        transition: 'transform 0.3s, box-shadow 0.3s'
                     }}>
                         <div style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            right: 0,
                             height: '6px',
-                            background: mode.color
+                            width: '40px',
+                            background: mode.color,
+                            borderRadius: '3px',
+                            marginBottom: '1.5rem'
                         }} />
 
-                        <div>
-                            <h3 style={{ fontSize: '1.8rem', marginBottom: '0.5rem', color: 'var(--text-main)' }}>{mode.title}</h3>
-                            <p style={{ color: 'var(--text-muted)', marginBottom: '2rem', fontSize: '1rem' }}>{mode.description}</p>
-                        </div>
+                        <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', color: '#fff' }}>{mode.title}</h3>
+                        <p style={{ color: 'var(--text-muted)', marginBottom: '2rem', minHeight: '3rem' }}>{mode.description}</p>
 
-                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: 'auto' }}>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: 'auto' }}>
                             {mode.levels.map(level => (
                                 <button
                                     key={level}
@@ -95,23 +117,26 @@ const Game = () => {
                                     style={{
                                         flex: 1,
                                         padding: '0.5rem',
-                                        fontSize: '0.8rem',
-                                        background: 'rgba(255,255,255,0.05)',
-                                        color: 'var(--text-muted)',
-                                        border: '1px solid rgba(255,255,255,0.1)',
+                                        fontSize: '0.85rem',
+                                        background: 'transparent',
+                                        color: mode.color,
+                                        border: `1px solid ${mode.color}`,
                                         borderRadius: '8px',
                                         textTransform: 'capitalize',
-                                        whiteSpace: 'nowrap'
+                                        whiteSpace: 'nowrap',
+                                        cursor: 'pointer',
+                                        opacity: 0.8,
+                                        transition: 'all 0.2s'
                                     }}
                                     onMouseEnter={(e) => {
                                         e.target.style.background = mode.color;
                                         e.target.style.color = '#000';
-                                        e.target.style.border = '1px solid transparent';
+                                        e.target.style.opacity = '1';
                                     }}
                                     onMouseLeave={(e) => {
-                                        e.target.style.background = 'rgba(255,255,255,0.05)';
-                                        e.target.style.color = 'var(--text-muted)';
-                                        e.target.style.border = '1px solid rgba(255,255,255,0.1)';
+                                        e.target.style.background = 'transparent';
+                                        e.target.style.color = mode.color;
+                                        e.target.style.opacity = '0.8';
                                     }}
                                 >
                                     {level}
