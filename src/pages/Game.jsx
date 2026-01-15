@@ -8,7 +8,7 @@ const Game = () => {
     const mode = searchParams.get('mode') || 'classic';
     const {
         words, inputValue, handleInput, time, isPlaying, isGameOver,
-        stats, lives, aiProgress, startGame, resetGame, currentWordIndex
+        stats, lives, aiProgress, startGame, resetGame, currentWordIndex, config
     } = useGameLogic(mode);
 
     // Format time mm:ss
@@ -28,10 +28,12 @@ const Game = () => {
                     {mode.replace('-', ' ')}
                 </span>
                 <div id="gameStatsDisplay">
-                    Time: <span className="timer">{formatTime(time)}</span> |
+                    {config.showTimer && (
+                        <>Time: <span className="timer">{formatTime(time)}</span> | </>
+                    )}
                     WPM: <span>{stats.wpm}</span> |
                     Acc: <span>{stats.accuracy}%</span>
-                    {mode === 'survival' && (
+                    {(mode === 'survival' || config.type === 'survival') && (
                         <span style={{ marginLeft: '10px' }}>| Lives: <span style={{ color: 'var(--error)' }}>{lives}</span></span>
                     )}
                 </div>
@@ -54,23 +56,28 @@ const Game = () => {
 
                 {isPlaying && (
                     <>
-                        <div className="word-display">
-                            {mode === 'sentence' ? (
-                                words.map((w, i) => (
-                                    <span key={i} className={
-                                        i === currentWordIndex ? 'current' :
-                                            i < currentWordIndex ? 'correct' : ''
-                                    } style={{
-                                        color: i === currentWordIndex ? 'var(--primary)' :
-                                            i < currentWordIndex ? 'var(--text-muted)' : 'inherit',
-                                        borderBottom: i === currentWordIndex ? '2px solid var(--primary)' : 'none',
-                                        marginRight: '5px'
+                        <div className="word-display" style={{
+                            maxHeight: '150px',
+                            overflow: 'hidden',
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            justifyContent: config.type === 'beginner' ? 'center' : 'flex-start'
+                        }}>
+                            {['sentence', 'intermediate', 'advanced', 'expert', 'elementary', 'classic'].includes(config.type) ? (
+                                // Render stream of words
+                                words.slice(currentWordIndex, currentWordIndex + 20).map((w, i) => (
+                                    <span key={i} className={i === 0 ? 'current' : ''} style={{
+                                        color: i === 0 ? 'var(--primary)' : 'var(--text-muted)',
+                                        borderBottom: i === 0 ? '2px solid var(--primary)' : 'none',
+                                        marginRight: '10px',
+                                        fontSize: i === 0 ? '1.5rem' : '1.2rem',
+                                        opacity: i === 0 ? 1 : 0.6
                                     }}>
-                                        {w}{' '}
+                                        {w}
                                     </span>
                                 ))
                             ) : (
-                                // For other modes just show current word big
+                                // Beginner / Single word focus
                                 <span style={{ fontSize: '3rem', fontWeight: 'bold' }}>{words[currentWordIndex]}</span>
                             )}
                         </div>
@@ -95,7 +102,7 @@ const Game = () => {
                         </p>
                         <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
                             <button onClick={() => { resetGame(); startGame(); }} className="btn btn-primary">Play Again</button>
-                            <button onClick={() => navigate('/dashboard')} className="btn btn-secondary">Dashboard</button>
+                            <button onClick={() => navigate('/practice')} className="btn btn-secondary">Back to Practice</button>
                         </div>
                     </div>
                 )}

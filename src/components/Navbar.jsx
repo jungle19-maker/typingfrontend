@@ -4,12 +4,16 @@ import { AuthContext } from '../context/AuthContext';
 
 const Navbar = () => {
     const { user, logout } = useContext(AuthContext);
+    const location = window.location.pathname;
+
+    if (location === '/practice-session') return null;
 
     return (
         <nav className="navbar">
             <Link to="/" className="logo">Typing<span>Master</span></Link>
             <div className="nav-links">
                 <Link to="/">Home</Link>
+                <Link to="/practice">Practice</Link>
                 {user ? (
                     <>
                         <Link to="/dashboard">Dashboard</Link>
