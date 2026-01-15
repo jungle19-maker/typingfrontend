@@ -183,7 +183,7 @@ export const useGameLogic = (gameMode) => {
     const saveResult = async () => {
         const token = localStorage.getItem('token');
         try {
-            await axios.post('http://localhost:5000/api/results', {
+            await axios.post(`${import.meta.env.VITE_API_URL}/api/results`, {
                 gameType: config.current.type,
                 wpm: wpm === Infinity ? 0 : wpm,
                 accuracy,
