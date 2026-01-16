@@ -8,7 +8,6 @@ const Login = () => {
     const { login, user } = useContext(AuthContext);
     const navigate = useNavigate();
     const [error, setError] = useState('');
-
     const [showPassword, setShowPassword] = useState(false);
 
     useEffect(() => {
@@ -21,129 +20,66 @@ const Login = () => {
         e.preventDefault();
         try {
             await login(email, password);
-            navigate('/'); // Navigate to home instead of dashboard for now
+            navigate('/');
         } catch (err) {
             setError(err.response?.data?.message || 'Login failed');
         }
     };
 
     return (
-        <div style={{
-            minHeight: '80vh',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '2rem'
-        }}>
-            <div style={{
-                background: 'linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)',
-                border: '1px solid rgba(255,255,255,0.05)',
-                borderRadius: '24px',
-                padding: '3rem',
-                width: '100%',
-                maxWidth: '450px',
-                position: 'relative',
-                backdropFilter: 'blur(20px)',
-                boxShadow: '0 20px 50px rgba(0,0,0,0.3)'
-            }}>
-                <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-                    <h1 style={{ fontSize: '2.5rem', fontWeight: '900', marginBottom: '0.5rem' }}>
-                        Welcome <span style={{ color: 'var(--primary)' }}>Back</span>
+        <div className="flex items-center justify-center min-h-[calc(100vh-80px)] p-4">
+            <div className="w-full max-w-md p-8 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl shadow-2xl relative">
+
+                <div className="text-center mb-10">
+                    <h1 className="text-4xl font-black mb-2 text-white">
+                        Welcome <span className="text-primary">Back</span>
                     </h1>
-                    <p style={{ color: 'var(--text-muted)' }}>Sign in to continue your typing journey.</p>
+                    <p className="text-gray-400">Sign in to continue your typing journey.</p>
                 </div>
 
                 {error && (
-                    <div style={{
-                        background: 'rgba(255, 0, 85, 0.1)',
-                        border: '1px solid var(--error)',
-                        color: 'var(--error)',
-                        padding: '1rem',
-                        borderRadius: '12px',
-                        marginBottom: '1.5rem',
-                        textAlign: 'center'
-                    }}>
+                    <div className="mb-6 p-4 rounded-xl bg-error/10 border border-error text-error text-center text-sm font-medium">
                         {error}
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
-                        <label style={{ display: 'block', color: 'var(--text-muted)', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Email Address</label>
+                        <label className="block text-gray-400 text-sm mb-2 ml-1">Email Address</label>
                         <input
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
-                            style={{
-                                width: '100%',
-                                padding: '1rem',
-                                background: 'rgba(0,0,0,0.2)',
-                                border: '1px solid rgba(255,255,255,0.1)',
-                                borderRadius: '12px',
-                                color: '#fff',
-                                outline: 'none',
-                                fontSize: '1rem',
-                                transition: 'all 0.3s',
-                                boxSizing: 'border-box'
-                            }}
-                            onFocus={(e) => e.target.style.borderColor = 'var(--primary)'}
-                            onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
+                            className="w-full p-4 rounded-xl bg-black/20 border border-white/10 text-white outline-none focus:border-primary transition duration-300 placeholder-gray-600"
+                            placeholder="you@example.com"
                         />
                     </div>
+
                     <div>
-                        <label style={{ display: 'block', color: 'var(--text-muted)', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Password</label>
-                        <div style={{ position: 'relative' }}>
+                        <label className="block text-gray-400 text-sm mb-2 ml-1">Password</label>
+                        <div className="relative">
                             <input
                                 type={showPassword ? "text" : "password"}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
-                                style={{
-                                    width: '100%',
-                                    padding: '1rem',
-                                    paddingRight: '3rem',
-                                    background: 'rgba(0,0,0,0.2)',
-                                    border: '1px solid rgba(255,255,255,0.1)',
-                                    borderRadius: '12px',
-                                    color: '#fff',
-                                    outline: 'none',
-                                    fontSize: '1rem',
-                                    transition: 'all 0.3s'
-                                }}
-                                onFocus={(e) => e.target.style.borderColor = 'var(--primary)'}
-                                onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
+                                className="w-full p-4 pr-12 rounded-xl bg-black/20 border border-white/10 text-white outline-none focus:border-primary transition duration-300 placeholder-gray-600"
+                                placeholder="••••••••"
                             />
                             <button
                                 type="button"
                                 onClick={() => setShowPassword(!showPassword)}
-                                style={{
-                                    position: 'absolute',
-                                    right: '1rem',
-                                    top: '50%',
-                                    transform: 'translateY(-50%)',
-                                    background: 'none',
-                                    border: 'none',
-                                    color: 'var(--text-muted)',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    padding: '0.2rem',
-                                    transition: 'color 0.3s'
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--primary)'}
-                                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
-                                title={showPassword ? "Hide password" : "Show password"}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-primary transition-colors"
                             >
                                 {showPassword ? (
-                                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
                                     </svg>
                                 ) : (
-                                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                     </svg>
                                 )}
                             </button>
@@ -152,24 +88,14 @@ const Login = () => {
 
                     <button
                         type="submit"
-                        className="btn"
-                        style={{
-                            background: 'var(--primary)',
-                            color: '#000',
-                            fontWeight: 'bold',
-                            padding: '1rem',
-                            borderRadius: '12px',
-                            marginTop: '1rem',
-                            border: 'none',
-                            fontSize: '1.1rem'
-                        }}
+                        className="w-full py-4 rounded-xl bg-gradient-to-r from-primary to-emerald-400 text-black font-bold text-lg hover:shadow-lg hover:shadow-primary/20 hover:scale-[1.02] transition-all duration-200"
                     >
                         Login
                     </button>
                 </form>
 
-                <p style={{ textAlign: 'center', marginTop: '2rem', color: 'var(--text-muted)' }}>
-                    Don't have an account? <Link to="/register" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 'bold' }}>Register</Link>
+                <p className="text-center mt-8 text-gray-500">
+                    Don't have an account? <Link to="/register" className="text-primary font-bold hover:underline">Register</Link>
                 </p>
             </div>
         </div>
