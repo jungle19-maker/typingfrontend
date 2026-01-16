@@ -40,6 +40,15 @@ const Report = () => {
 
     return (
         <div className="dashboard-container">
+            <button
+                onClick={() => navigate('/')}
+                className="btn-icon back-btn"
+                style={{ position: 'absolute', top: '1rem', left: '1rem', color: 'var(--text-muted)' }}
+            >
+                <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+            </button>
             <div className="welcome-section">
                 <h1>Report for <span className="highlight" style={{ color: 'var(--primary)' }}>{user?.username}</span></h1>
             </div>

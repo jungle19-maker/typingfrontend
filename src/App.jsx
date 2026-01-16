@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import PublicRoute from './components/PublicRoute';
+import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -23,10 +24,10 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
               <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
-              <Route path="/report" element={<Report />} />
-              <Route path="/practice" element={<Practice />} />
-              <Route path="/practice-session" element={<PracticeSession />} />
-              <Route path="/game" element={<Game />} />
+              <Route path="/report" element={<ProtectedRoute><Report /></ProtectedRoute>} />
+              <Route path="/practice" element={<ProtectedRoute><Practice /></ProtectedRoute>} />
+              <Route path="/practice-session" element={<ProtectedRoute><PracticeSession /></ProtectedRoute>} />
+              <Route path="/game" element={<ProtectedRoute><Game /></ProtectedRoute>} />
             </Routes>
           </div>
         </AuthProvider>
