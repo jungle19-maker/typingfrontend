@@ -10,13 +10,13 @@ const Navbar = () => {
 
     return (
         <nav className="navbar">
-            <Link to="/" className="logo">Typing<span>Master</span></Link>
+            <Link to="/" className="logo">key<span className="text-primary">Skill</span></Link>
             <div className="nav-links">
                 <NavLink to="/" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>Home</NavLink>
-                <NavLink to="/practice" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>Practice</NavLink>
-                <NavLink to="/game" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>Games</NavLink>
                 {user ? (
                     <>
+                        <NavLink to="/practice" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>Practice</NavLink>
+                        <NavLink to="/game" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>Games</NavLink>
                         <NavLink to="/report" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>Reports</NavLink>
                         <a href="#" onClick={logout} className="nav-link">Logout</a>
                     </>

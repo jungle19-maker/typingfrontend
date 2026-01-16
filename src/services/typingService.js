@@ -2,7 +2,12 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
+const cache = new Map();
+
 export const fetchWords = async (lengthOrDifficulty, count = 50) => {
+    const key = `words-${lengthOrDifficulty}-${count}`;
+    if (cache.has(key)) return [...cache.get(key)]; // Return copy to prevent mutation
+
     // If it's a number, treat as length. If string, treat as difficulty (mapped to backend logic if exists, or handled here)
     // Actually backend only supports length currently. Let's send length if number.
     // If we want mixed, we might need a new endpoint or multiple calls.
@@ -16,19 +21,36 @@ export const fetchWords = async (lengthOrDifficulty, count = 50) => {
 
     // Changing strategy: Update backend to support difficulty for words too.
     const params = typeof lengthOrDifficulty === 'number'
-        ? { length: lengthOrDifficulty, count }
-        : { difficulty: lengthOrDifficulty, count };
+        ? { length: lengthOrDifficulty, limit: count }
+        : { difficulty: lengthOrDifficulty, limit: count };
 
-    const response = await axios.get(`${API_URL}/api/typing/words`, { params });
-    return response.data.data;
+    try {
+        const response = await axios.get(`${API_URL}/api/typing/words`, { params });
+        const data = response.data.data;
+        if (data && data.length > 0) cache.set(key, data);
+        return data;
+    } catch (error) {
+        console.error("Fetch Error:", error);
+        return [];
+    }
 };
 
 export const fetchCapitals = async (difficulty = 'basic') => {
+    const key = `capitals-${difficulty}`;
+    if (cache.has(key)) return [...cache.get(key)];
+
     const response = await axios.get(`${API_URL}/api/typing/capitals`, { params: { difficulty } });
-    return response.data.data;
+    const data = response.data.data;
+    if (data) cache.set(key, data);
+    return data;
 };
 
 export const fetchParagraphs = async (difficulty = 'basic') => {
+    const key = `paragraphs-${difficulty}`;
+    if (cache.has(key)) return JSON.parse(JSON.stringify(cache.get(key)));
+
     const response = await axios.get(`${API_URL}/api/typing/paragraphs`, { params: { difficulty } });
-    return response.data.data;
+    const data = response.data.data;
+    if (data) cache.set(key, data);
+    return data;
 };

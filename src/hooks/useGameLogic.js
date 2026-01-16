@@ -23,6 +23,10 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
     const [fallingWords, setFallingWords] = useState([]); // { id, text, x, y, speed, typed }
     const [activeWordId, setActiveWordId] = useState(null); // The word currently being typed
 
+    // --- Scrolling Sentence State ---
+    const [scrollPos, setScrollPos] = useState(0); // in pixels
+    const [scrollSpeed, setScrollSpeed] = useState(0); // pixels per frame
+
     // Refs
     const config = useRef({
         timeLimit: 60,
@@ -32,24 +36,28 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
         showTimer: true,
         penalty: false,
         spawnRate: 2000,
-        fallSpeedBase: 1
+        fallSpeedBase: 1,
+        initialSpeed: 1 // for sentence scrolling
     });
 
     const timerRef = useRef(null);
     const rainLoopRef = useRef(null);
+    const scrollLoopRef = useRef(null);
     const lastSpawnTime = useRef(0);
     const wordIdCounter = useRef(0);
 
-    // Loop State Refs (to avoid stale closures)
     const isPlayingRef = useRef(isPlaying);
     const isGameOverRef = useRef(isGameOver);
     const wordsRef = useRef(words);
+    const initialPoolRef = useRef([]); // Store original pool to avoid doubling exponential growth
+    const inputValueRef = useRef(inputValue); // Ref for Loop Access
 
     useEffect(() => {
         isPlayingRef.current = isPlaying;
         isGameOverRef.current = isGameOver;
         wordsRef.current = words;
-    }, [isPlaying, isGameOver, words]);
+        inputValueRef.current = inputValue; // Sync ref
+    }, [isPlaying, isGameOver, words, inputValue]);
 
     // --- Setup Config ---
     const setupConfig = (mode, diff) => {
@@ -84,7 +92,14 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
             case 'practice-paragraph':
                 return { ...baseConfig, type: 'practice-paragraph', timeLimit: 0, showTimer: true };
             case 'sentence':
-                return { ...baseConfig, type: 'sentence', timeLimit: 0, showTimer: true };
+                return {
+                    ...baseConfig,
+                    type: 'sentence',
+                    timeLimit: 0,
+                    showTimer: true,
+                    allowErrors: false, // Strict typing
+                    initialSpeed: isBeginner ? 1 : (isAdvanced ? 3 : 2)
+                };
             case 'survival':
                 return { ...baseConfig, type: 'survival', lives: isBeginner ? 10 : 3, penalty: true };
             case 'race':
@@ -114,6 +129,15 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
             } else if (type === 'practice-paragraph') {
                 const paragraphs = await fetchParagraphs(difficulty);
                 if (paragraphs && paragraphs.length > 0) data = paragraphs[0].text.split(' ');
+            } else if (type === 'sentence') {
+                const paragraphs = await fetchParagraphs(difficulty);
+                if (paragraphs && paragraphs.length > 0) {
+                    // Split into sentences (simple regex for . ! ?)
+                    const text = paragraphs.map(p => p.text).join(' ');
+                    // Match sentences ending in punctuation, allow spaces
+                    data = text.match(/[^\.!\?]+[\.!\?]+/g) || [text];
+                    data = data.map(s => s.trim());
+                }
             } else {
                 data = await fetchWords(difficulty);
             }
@@ -121,6 +145,7 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
             if (!data || data.length === 0) data = ['loading', 'failed'];
 
             setWords(data); // For Rain, this is our "Pool"
+            initialPoolRef.current = data; // Save for efficient expansion
         } catch (error) {
             console.error(error);
             setWords(['error']);
@@ -150,7 +175,9 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
         setTime(config.current.timeLimit || 0);
 
         if (timerRef.current) clearInterval(timerRef.current);
+        if (timerRef.current) clearInterval(timerRef.current);
         if (rainLoopRef.current) cancelAnimationFrame(rainLoopRef.current);
+        if (scrollLoopRef.current) cancelAnimationFrame(scrollLoopRef.current);
 
         await loadContent();
     }, [loadContent]);
@@ -161,28 +188,61 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
     const handleClassicInput = (e) => {
         const val = e.target.value;
         const prevVal = inputValue;
-        const isDelete = val.length < prevVal.length;
-        setInputValue(val);
 
+        // Safety: Cap input length to avoid memory issues if user spams keys
         const currentTarget = words[currentWordIndex];
+        const isDelete = val.length < prevVal.length;
+        if (currentTarget && val.length > currentTarget.length + 10 && !isDelete && !val.endsWith(' ')) return;
+
         if (!currentTarget) return;
 
-        // Combo & Stats logic same as before...
-        if (!isDelete && val.length > prevVal.length) {
+        // Handle Deletion (Always allow)
+        if (isDelete) {
+            setInputValue(val);
+            return;
+        }
+
+        // Handle Addition
+        if (val.length > prevVal.length) {
+            // Check if valid addition
             if (currentTarget.startsWith(val.trim())) {
+                // Valid Input
+                setInputValue(val);
                 setCombo(prev => {
                     const next = prev + 1;
                     if (next > maxCombo) setMaxCombo(next);
                     return next;
                 });
             } else {
-                setCombo(0);
+                // Invalid Input
+                // Only allow update if allowErrors is ON
+                if (config.current.allowErrors) {
+                    // Allow typing the error (it will be red)
+                    setInputValue(val);
+                    setCombo(0);
+                    setStats(prev => ({ ...prev, mistakes: prev.mistakes + 1 }));
+                } else {
+                    // Strict Mode: Block the input (Do NOT setInputValue)
+                    // Just count the mistake
+                    setCombo(0);
+                    setStats(prev => ({ ...prev, mistakes: prev.mistakes + 1 }));
+                    return; // "Freeze" the visual input at previous state
+                }
             }
         }
 
+        // Completion / Skipping Logic
+        // Logic: if we allowed error, val might be mismatch.
+        // If strict, val is match.
+        // Check for Space (Word submit) OR Exact Match (Sentence submit)
         if (val.endsWith(' ') || (config.current.type === 'sentence' && val === currentTarget)) {
             const trimmedVal = val.trim();
+
+            // In strict mode, val === currentTarget is guaranteed if we get here for sentence
+            // In allowErrors mode, trimmedVal might NOT be currentTarget
+
             if (trimmedVal === currentTarget) {
+                // Correct Completion
                 setStats(prev => ({
                     ...prev,
                     correctChars: prev.correctChars + currentTarget.length + 1,
@@ -194,15 +254,39 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
                 // End / Loop logic
                 if (currentWordIndex + 1 >= words.length) {
                     if (['practice-2-letter', 'practice-3-letter', 'practice-capital'].includes(config.current.type)) {
-                        setWords(prev => [...prev, ...prev]);
+                        setWords(prev => [...prev, ...initialPoolRef.current]);
                     } else {
                         endGame();
                     }
                 }
             } else {
+                // Incorrect Completion (Space pressed on wrong word)
+                // This only happens if allowErrors is TRUE (since strict blocks the wrong chars)
                 setCombo(0);
                 setStats(prev => ({ ...prev, mistakes: prev.mistakes + 1 }));
-                if (!config.current.allowErrors) setInputValue(prev => prev.trim());
+
+                if (config.current.allowErrors) {
+                    // Skip Word logic
+                    setStats(prev => ({
+                        ...prev,
+                        totalChars: prev.totalChars + currentTarget.length + 1
+                    }));
+                    setCurrentWordIndex(prev => prev + 1);
+                    setInputValue('');
+
+                    // Check Loop Logic
+                    if (currentWordIndex + 1 >= words.length) {
+                        if (['practice-2-letter', 'practice-3-letter', 'practice-capital'].includes(config.current.type)) {
+                            setWords(prev => [...prev, ...initialPoolRef.current]);
+                        } else {
+                            endGame();
+                        }
+                    }
+                } else {
+                    // Strict mode fallback (shouldn't really be reached if strict blocks input)
+                    // But if it is keys mismatch:
+                    setInputValue(prev => prev.trim());
+                }
             }
         }
     };
@@ -365,14 +449,54 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
         };
     }, [gameMode, difficulty, resetGame]);
 
+    // --- Scrolling Sentence Engine ---
+    const updateScroll = () => {
+        if (!isPlayingRef.current || isGameOverRef.current) return;
+
+        setScrollPos(prev => {
+            // Pause Logic: Estimate position
+            // Use REF for inputValue to avoid stale closure
+            const CHAR_WIDTH = 25; // Conservative estimate
+            const charOffset = inputValueRef.current.length * CHAR_WIDTH;
+            const buffer = 300; // Allow 300px of text to be visible before cursor
+
+            // If ScrollPos is significantly larger than CharOffset, it means the text has moved Left fast
+            // and the cursor (CharOffset) hasn't kept up.
+            // Text Position = StartX - ScrollPos. Cursor = Text Position + CharOffset.
+            // We want Cursor > LowBound.
+            // If (ScrollPos - CharOffset) > Limit? 
+            // Example: ScrollPos=500, CharOffset=0. Text is -500px left. Cursor is at -500px. Bad.
+            // We want pause if ScrollPos > CharOffset + SafeZone.
+
+            const maxScroll = charOffset + 600; // Allow sentence to flow up to 600px past "start" relative to typing
+            // This logic is tricky without container width.
+
+            // Simpler: Just limit relative speed? No.
+            // Let's implement a "Lag Limit".
+            if (prev > charOffset + 400) {
+                return prev; // Pause (Wait for user to catch up)
+            }
+
+            return prev + (config.current.initialSpeed || 1);
+        });
+
+        scrollLoopRef.current = requestAnimationFrame(updateScroll);
+    };
+
     const startGame = () => {
         if (isLoading) return;
         setIsPlaying(true);
+        isPlayingRef.current = true; // Fix: Ensure ref is true for loop immediately
+        isGameOverRef.current = false;
+
+        // Reset Scroll state
+        setScrollPos(0);
+        setScrollSpeed(config.current.initialSpeed || 1);
 
         // Classic Timer
         timerRef.current = setInterval(() => {
             setTime(prev => {
-                if (config.current.type === 'word-rain') return prev + 1; // Count up
+                if (config.current.type === 'word-rain' || config.current.type === 'sentence') return prev + 1; // Count up
                 if (config.current.timeLimit > 0) {
                     if (prev <= 1) { endGame(); return 0; }
                     return prev - 1;
@@ -390,11 +514,12 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
             }
         }, 1000);
 
-        // Rain Loop
+        // Engines
         if (config.current.type === 'word-rain') {
-            // Force immediate spawn
             lastSpawnTime.current = performance.now() - config.current.spawnRate;
             rainLoopRef.current = requestAnimationFrame(updateRain);
+        } else if (config.current.type === 'sentence') {
+            scrollLoopRef.current = requestAnimationFrame(updateScroll);
         }
     };
 
@@ -403,6 +528,7 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
         setIsGameOver(true);
         if (timerRef.current) clearInterval(timerRef.current);
         if (rainLoopRef.current) cancelAnimationFrame(rainLoopRef.current);
+        if (scrollLoopRef.current) cancelAnimationFrame(scrollLoopRef.current);
     }, []);
 
     // Save Results
@@ -459,6 +585,8 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
         resetGame,
         currentWordIndex, // Classic
         config: config.current,
-        isLoading
+        config: config.current,
+        isLoading,
+        scrollPos // Export for UI
     };
 };

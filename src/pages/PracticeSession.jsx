@@ -14,7 +14,7 @@ const PracticeSession = () => {
     const {
         words, inputValue, handleInput, time, isPlaying, isGameOver,
         stats, startGame, resetGame, currentWordIndex, config,
-        lives, aiProgress, combo, maxCombo, rank, isLoading, fallingWords
+        lives, aiProgress, combo, maxCombo, rank, isLoading, fallingWords, scrollPos
     } = useGameLogic(mode, difficulty);
 
     // Auto-start
@@ -54,7 +54,16 @@ const PracticeSession = () => {
             {/* Premium HUD */}
             <header className="game-hud">
                 <div className="hud-left">
-                    <button onClick={() => navigate('/practice')} className="btn-icon back-btn">
+                    <button
+                        onClick={() => {
+                            if (mode.startsWith('practice-')) {
+                                navigate('/practice');
+                            } else {
+                                navigate('/game');
+                            }
+                        }}
+                        className="btn-icon back-btn"
+                    >
                         <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                         </svg>
@@ -145,6 +154,24 @@ const PracticeSession = () => {
                                     ))}
                                     <div className="danger-zone-line"></div>
                                 </div>
+                            ) : mode === 'sentence' ? (
+                                <div className="ticker-container">
+                                    <div className="ticker-track" style={{ left: '100%', transform: `translateX(-${scrollPos}px)` }}>
+                                        <div className="ticker-sentence">
+                                            {currentWord.split('').map((char, idx) => {
+                                                let status = 'pending';
+                                                if (idx < inputValue.length) {
+                                                    status = inputValue[idx] === char ? 'correct' : 'incorrect';
+                                                } else if (idx === inputValue.length) {
+                                                    status = 'caret-block';
+                                                }
+                                                return <span key={idx} className={`char ${status}`}>{char}</span>
+                                            })}
+                                        </div>
+                                    </div>
+                                    <div className="ticker-fade-left"></div>
+                                    <div className="ticker-fade-right"></div>
+                                </div>
                             ) : (
                                 <div className="word-stream-premium">
                                     {/* Focus on current word with context */}
@@ -178,9 +205,11 @@ const PracticeSession = () => {
                         </div>
 
                         {/* Keyboard */}
-                        <div className="keyboard-footer-wrapper">
-                            <InstructionalUI activeChar={nextChar} />
-                        </div>
+                        {mode !== 'sentence' && (
+                            <div className="keyboard-footer-wrapper">
+                                <InstructionalUI activeChar={nextChar} />
+                            </div>
+                        )}
                     </>
                 )}
             </main>
