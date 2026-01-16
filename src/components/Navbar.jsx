@@ -10,7 +10,7 @@ const Navbar = () => {
 
     return (
         <nav className="navbar">
-            <Link to="/" className="logo">Typing<span>Master</span></Link>
+            <Link to="/" className="logo">key<span className="text-primary">Skill</span></Link>
             <div className="nav-links">
                 <NavLink to="/" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>Home</NavLink>
                 {user ? (

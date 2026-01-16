@@ -13,9 +13,27 @@
 body {
   background-color: var(--bg-dark);
   color: var(--text-main);
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   margin: 0;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Typing Optimization */
+.font-mono {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Roboto Mono', monospace;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Prevent layout shift in game container */
+.game-container {
+  contain: layout style;
+  transform: translateZ(0);
+  /* Hardware acceleration */
 }
 
 /* Utils */
@@ -46,6 +64,19 @@ body {
   display: flex;
   flex-direction: column;
   width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  justify-content: center;
+  /* Helper for centering content vertically if needed */
 }
 
 /* Navbar */
@@ -116,6 +147,7 @@ body {
 .hero-content {
   z-index: 2;
   max-width: 800px;
+  margin: 0 auto;
   padding: 2rem;
 }
 
@@ -269,6 +301,7 @@ body {
 }
 
 .word-stream-premium {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Roboto Mono', monospace;
   font-size: 2rem;
   font-weight: 500;
   min-height: 100px;
@@ -481,6 +514,7 @@ input:-webkit-autofill:active {
 
 .falling-word {
   position: absolute;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Roboto Mono', monospace;
   color: #fff;
   font-size: 1.2rem;
   font-weight: 600;
@@ -610,8 +644,14 @@ input:-webkit-autofill:active {
 
 /* HERO SECTION */
 .hero-section {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
   text-align: center;
-  padding: 6rem 1rem;
+  min-height: 70vh;
+  width: 100%;
+  padding: 2rem 1rem;
   background: radial-gradient(circle at center, rgba(0, 242, 234, 0.05) 0%, transparent 70%);
 }
 

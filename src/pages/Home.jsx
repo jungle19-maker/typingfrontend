@@ -42,22 +42,38 @@ const Home = () => {
                 </div>
                 <div className="features-grid">
                     <div className="feature-card">
-                        <div className="feature-icon">🎮</div>
+                        <div className="feature-icon text-primary">
+                            <svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
+                            </svg>
+                        </div>
                         <h3>Typing Games</h3>
                         <p>Engage with Word Rain, Scrolling Sentences, and Survival modes to make practice addictive.</p>
                     </div>
                     <div className="feature-card">
-                        <div className="feature-icon">📝</div>
+                        <div className="feature-icon text-cyan-400">
+                            <svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                            </svg>
+                        </div>
                         <h3>Practice Modules</h3>
                         <p>Structured lessons for 2-letter words, trigrams, capital letters, and full paragraphs.</p>
                     </div>
                     <div className="feature-card">
-                        <div className="feature-icon">📈</div>
+                        <div className="feature-icon text-emerald-400">
+                            <svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                            </svg>
+                        </div>
                         <h3>Live Tracking</h3>
                         <p>Get real-time feedback on your WPM, accuracy, and detailed mistake analysis.</p>
                     </div>
                     <div className="feature-card">
-                        <div className="feature-icon">🚀</div>
+                        <div className="feature-icon text-purple-400">
+                            <svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                        </div>
                         <h3>Progression</h3>
                         <p>Start as a Beginner and work your way up to Advanced difficulty levels.</p>
                     </div>
