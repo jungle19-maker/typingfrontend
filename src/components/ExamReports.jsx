@@ -12,7 +12,7 @@ const ExamReports = () => {
         const fetchHistory = async () => {
             try {
                 const token = localStorage.getItem('token');
-                const { data } = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/exams/history`, {
+                const { data } = await axios.get(`${import.meta.env.VITE_API_URL || 'https://typingbackend-kfoz.onrender.com'}/api/exams/history`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 setResults(data);

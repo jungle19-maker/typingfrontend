@@ -19,7 +19,7 @@ const Exams = () => {
                 // Determine if we need auth headers? The route seems public or protected?
                 // backend/routes/examRoutes.js: router.route('/').get(getExams) -> It DOES NOT have 'protect' middleware.
                 // It is public.
-                const { data } = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/exams`);
+                const { data } = await axios.get(`${import.meta.env.VITE_API_URL || 'https://typingbackend-kfoz.onrender.com'}/api/exams`);
                 setExams(data);
             } catch (err) {
                 console.error("Failed to fetch exams", err);
