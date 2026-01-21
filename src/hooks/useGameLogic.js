@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
-import { fetchWords, fetchCapitals, fetchParagraphs } from '../services/typingService';
+import { fetchWords, fetchCapitals, fetchParagraphs, fetchHindiWords, fetchHindiSentences, fetchHindiParagraphs } from '../services/typingService';
 import { BEGINNER_WORDS, ELEMENTARY_WORDS, INTERMEDIATE_WORDS, ADVANCED_WORDS, EXPERT_WORDS } from '../utils/wordLists';
 
-export const useGameLogic = (gameMode, difficulty = 'beginner') => {
+export const useGameLogic = (gameMode, difficulty = 'beginner', language = 'english') => {
     // --- Common State ---
     const [isPlaying, setIsPlaying] = useState(false);
     const [isGameOver, setIsGameOver] = useState(false);
@@ -106,7 +106,7 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
                 return { ...baseConfig, type: 'race', aiSpeed: isBeginner ? 2 : (isAdvanced ? 8 : 5) };
             case 'classic':
             default:
-                return { ...baseConfig, type: 'classic' };
+                return { ...baseConfig, type: 'classic', language: mode.language || 'english' };
         }
     };
 
@@ -116,43 +116,59 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
         try {
             let data = [];
             const type = config.current.type;
+            const lang = config.current.language || 'english';
 
-            if (type === 'word-rain') {
-                // Fetch pool based on difficulty
-                data = await fetchWords(difficulty, 100); // Fetch 100 words
-            } else if (type === 'practice-2-letter') {
-                data = await fetchWords(2);
-            } else if (type === 'practice-3-letter') {
-                data = await fetchWords(3);
-            } else if (type === 'practice-capital') {
-                data = await fetchCapitals(difficulty);
-            } else if (type === 'practice-paragraph') {
-                const paragraphs = await fetchParagraphs(difficulty);
-                if (paragraphs && paragraphs.length > 0) data = paragraphs[0].text.split(' ');
-            } else if (type === 'sentence') {
-                const paragraphs = await fetchParagraphs(difficulty);
-                if (paragraphs && paragraphs.length > 0) {
-                    // Split into sentences (simple regex for . ! ?)
-                    const text = paragraphs.map(p => p.text).join(' ');
-                    // Match sentences ending in punctuation, allow spaces
-                    data = text.match(/[^\.!\?]+[\.!\?]+/g) || [text];
-                    data = data.map(s => s.trim());
+            if (lang === 'hindi') {
+                // Hindi Fetching Logic
+                if (type === 'sentence') {
+                    data = await fetchHindiSentences(10);
+                } else if (type === 'practice-paragraph') {
+                    const paras = await fetchHindiParagraphs(difficulty);
+                    if (paras && paras.length > 0 && paras[0].content) {
+                        data = paras[0].content.split(' ');
+                    }
+                } else {
+                    // Default to words for everything else for now in Hindi
+                    data = await fetchHindiWords(50);
                 }
             } else {
-                data = await fetchWords(difficulty);
+                // English Fetching Logic (Existing)
+                if (type === 'word-rain') {
+                    data = await fetchWords(difficulty, 100);
+                } else if (type === 'practice-2-letter') {
+                    data = await fetchWords(2);
+                } else if (type === 'practice-3-letter') {
+                    data = await fetchWords(3);
+                } else if (type === 'practice-capital') {
+                    data = await fetchCapitals(difficulty);
+                } else if (type === 'practice-paragraph') {
+                    const paragraphs = await fetchParagraphs(difficulty);
+                    if (paragraphs && paragraphs.length > 0 && paragraphs[0].content) {
+                        data = paragraphs[0].content.split(' ');
+                    }
+                } else if (type === 'sentence') {
+                    const paragraphs = await fetchParagraphs(difficulty);
+                    if (paragraphs && paragraphs.length > 0) {
+                        const text = paragraphs.map(p => p.content).join(' ');
+                        data = text.match(/[^\.!\?]+[\.!\?]+/g) || [text];
+                        data = data.map(s => s.trim());
+                    }
+                } else {
+                    data = await fetchWords(difficulty);
+                }
             }
 
             if (!data || data.length === 0) data = ['loading', 'failed'];
 
-            setWords(data); // For Rain, this is our "Pool"
-            initialPoolRef.current = data; // Save for efficient expansion
+            setWords(data);
+            initialPoolRef.current = data;
         } catch (error) {
             console.error(error);
             setWords(['error']);
         } finally {
             setIsLoading(false);
         }
-    }, [difficulty]); // Depend on difficulty
+    }, [difficulty]); // Depend on difficulty (and we assume config.current.language is stable during playing or reset triggers it)
 
     // --- Game Reset ---
     const resetGame = useCallback(async () => {
@@ -441,13 +457,13 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
 
     // --- Init & Start ---
     useEffect(() => {
-        config.current = setupConfig(gameMode, difficulty);
+        config.current = { ...setupConfig(gameMode, difficulty), language };
         resetGame();
         return () => {
             if (timerRef.current) clearInterval(timerRef.current);
             if (rainLoopRef.current) cancelAnimationFrame(rainLoopRef.current);
         };
-    }, [gameMode, difficulty, resetGame]);
+    }, [gameMode, difficulty, language, resetGame]);
 
     // --- Scrolling Sentence Engine ---
     const updateScroll = () => {
@@ -542,11 +558,12 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
                 try {
                     // Calculate WPM for Rain: (chars / 5) / (minutes)
                     const wpm = Math.round((stats.correctChars / 5) / (Math.max(time, 1) / 60) || 0);
-                    await axios.post(`${import.meta.env.VITE_API_URL}/api/results`, {
+                    await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/results`, {
                         gameType: config.current.type,
                         wpm,
                         accuracy: stats.totalChars > 0 ? Math.round((stats.correctChars / stats.totalChars) * 100) : 100,
-                        mistakeCount: stats.mistakes
+                        mistakeCount: stats.mistakes,
+                        language: config.current.language || 'english'
                     }, { headers: { Authorization: `Bearer ${token}` } });
                 } catch (e) { console.error(e); }
             };
@@ -584,7 +601,6 @@ export const useGameLogic = (gameMode, difficulty = 'beginner') => {
         startGame,
         resetGame,
         currentWordIndex, // Classic
-        config: config.current,
         config: config.current,
         isLoading,
         scrollPos // Export for UI

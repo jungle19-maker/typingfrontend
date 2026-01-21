@@ -2,7 +2,7 @@ import { useContext } from 'react';
 import { Navigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
-const ProtectedRoute = ({ children }) => {
+const ProtectedRoute = ({ children, allowExpired = false }) => {
     const { user, loading } = useContext(AuthContext);
 
     if (loading) {
@@ -14,7 +14,16 @@ const ProtectedRoute = ({ children }) => {
     }
 
     if (!user) {
-        return <Navigate to="/" replace />;
+        return <Navigate to="/login" replace />;
+    }
+
+    // Check Subscription Status
+    const subStatus = user.subscription?.status || 'inactive';
+    const isExpired = subStatus === 'expired' || subStatus === 'banned';
+
+    // If user is expired, but route does NOT allow expired users, redirect to pricing
+    if (isExpired && !allowExpired) {
+        return <Navigate to="/pricing" replace />;
     }
 
     return children;

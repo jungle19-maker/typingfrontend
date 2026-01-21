@@ -1,32 +1,60 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 import { useGameLogic } from '../hooks/useGameLogic';
+import { useLanguage } from '../context/LanguageContext';
 import InstructionalUI from '../components/InstructionalUI';
 import ResultPanel from '../components/ResultPanel';
+import GameHUD from '../components/GameHUD';
+import TypingArea from '../components/TypingArea';
 import '../App.css';
 
 const PracticeSession = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
+    const { language } = useLanguage();
+    const { hasFeature, user, loading: authLoading } = useContext(AuthContext); // Get auth context
+
     const mode = searchParams.get('mode') || 'classic';
     const difficulty = searchParams.get('difficulty') || 'beginner';
+
+    // Access Control Logic
+    useEffect(() => {
+        if (authLoading) return;
+
+        // Define required features for modes
+        const requiredFeatures = {
+            'survival': 'survivalGameMode',
+            'race': 'typingRaceMode',
+            'rain': 'wordRainMode',
+            'sentence': 'sentenceTyping'
+        };
+
+        // Check specific Hindi modes if needed, simplified for now
+        if (language === 'hindi' && mode === 'paragraph' && !hasFeature('hindiParagraphPractice')) {
+            navigate('/pricing?reason=upgrade_required');
+            return;
+        }
+
+        const feature = requiredFeatures[mode];
+        if (feature && !hasFeature(feature)) {
+            navigate('/pricing?reason=upgrade_required');
+        }
+    }, [mode, language, hasFeature, navigate, authLoading]);
 
     const {
         words, inputValue, handleInput, time, isPlaying, isGameOver,
         stats, startGame, resetGame, currentWordIndex, config,
         lives, aiProgress, combo, maxCombo, rank, isLoading, fallingWords, scrollPos
-    } = useGameLogic(mode, difficulty);
+    } = useGameLogic(mode, difficulty, language);
 
     // Auto-start
     useEffect(() => {
         if (!isPlaying && !isGameOver && !isLoading) {
             startGame();
         }
-    }, [isPlaying, isGameOver, isLoading]);
-
-    const currentWord = words[currentWordIndex] || '';
-    const nextCharIndex = inputValue.length;
-    const nextChar = currentWord[nextCharIndex] || ' ';
+    }, [isPlaying, isGameOver, isLoading, startGame]);
 
     const inputRef = React.useRef(null);
 
@@ -34,16 +62,28 @@ const PracticeSession = () => {
         if (inputRef.current) inputRef.current.focus();
     };
 
+    const handleBack = useCallback(() => {
+        if (mode.startsWith('practice-')) {
+            navigate('/practice');
+        } else {
+            navigate('/game');
+        }
+    }, [mode, navigate]);
+
     if (isLoading) {
         return (
             <div className="practice-container premium-layout" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                 <div className="loading-spinner">
                     <div className="spinner-ring"></div>
-                    <p style={{ marginTop: '1rem', color: 'var(--primary)' }}>Fetching Content...</p>
+                    <p className="mt-4 text-primary animate-pulse">Initializing System...</p>
                 </div>
             </div>
         );
     }
+
+    const nextCharIndex = inputValue.length;
+    const currentWord = words[currentWordIndex] || '';
+    const nextChar = currentWord[nextCharIndex] || ' ';
 
     return (
         <div className="practice-container premium-layout" onClick={handleContainerClick}>
@@ -51,58 +91,16 @@ const PracticeSession = () => {
             <div className="bg-glow-orb top-left"></div>
             <div className="bg-glow-orb bottom-right"></div>
 
-            {/* Premium HUD */}
-            <header className="game-hud">
-                <div className="hud-left">
-                    <button
-                        onClick={() => {
-                            if (mode.startsWith('practice-')) {
-                                navigate('/practice');
-                            } else {
-                                navigate('/game');
-                            }
-                        }}
-                        className="btn-icon back-btn"
-                    >
-                        <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                        </svg>
-                    </button>
-                    <div className="mode-badge">
-                        <span className="dot"></span>
-                        {config.type.replace('practice-', '').replace('-', ' ').toUpperCase()}
-                    </div>
-                </div>
-
-                <div className="hud-center">
-                    {config.showTimer && (
-                        <div className={`timer-display ${time < 10 ? 'danger' : ''}`}>
-                            {time}
-                        </div>
-                    )}
-                </div>
-
-                <div className="hud-right">
-                    <div className="stat-unit">
-                        <span className="label">WPM</span>
-                        <span className="value">{stats.wpm}</span>
-                    </div>
-                    <div className="stat-separator"></div>
-                    <div className="stat-unit">
-                        <span className="label">Combo</span>
-                        <span className="value highlight-combo">{combo}x</span>
-                    </div>
-                    {mode === 'survival' && (
-                        <>
-                            <div className="stat-separator"></div>
-                            <div className="stat-unit">
-                                <span className="label">Lives</span>
-                                <span className="value danger">{lives}</span>
-                            </div>
-                        </>
-                    )}
-                </div>
-            </header>
+            {/* Premium HUD - Memoized */}
+            <GameHUD
+                mode={mode}
+                config={config}
+                time={time}
+                stats={stats}
+                combo={combo}
+                lives={lives}
+                onBack={handleBack}
+            />
 
             {/* Main Arena */}
             <main className="game-arena">
@@ -135,86 +133,31 @@ const PracticeSession = () => {
                             onChange={handleInput}
                             autoFocus
                             className="hidden-input"
-                            onBlur={(e) => e.target.focus()} // Keep focus
+                            onBlur={(e) => { e.target.focus(); }} // Aggressive focus keep
                         />
 
-                        {/* Typing Area */}
-                        <div className="typing-display-wrapper">
-                            {mode === 'word-rain' ? (
-                                <div className="word-rain-view">
-                                    {fallingWords.map(w => (
-                                        <div
-                                            key={w.id}
-                                            className="falling-word"
-                                            style={{ left: `${w.x}%`, top: `${w.y}%` }}
-                                        >
-                                            <span className="rain-text matched">{w.typed}</span>
-                                            <span className="rain-text remaining">{w.text.slice(w.typed.length)}</span>
-                                        </div>
-                                    ))}
-                                    <div className="danger-zone-line"></div>
-                                </div>
-                            ) : mode === 'sentence' ? (
-                                <div className="ticker-container">
-                                    <div className="ticker-track" style={{ left: '100%', transform: `translateX(-${scrollPos}px)` }}>
-                                        <div className="ticker-sentence">
-                                            {currentWord.split('').map((char, idx) => {
-                                                let status = 'pending';
-                                                if (idx < inputValue.length) {
-                                                    status = inputValue[idx] === char ? 'correct' : 'incorrect';
-                                                } else if (idx === inputValue.length) {
-                                                    status = 'caret-block';
-                                                }
-                                                return <span key={idx} className={`char ${status}`}>{char}</span>
-                                            })}
-                                        </div>
-                                    </div>
-                                    <div className="ticker-fade-left"></div>
-                                    <div className="ticker-fade-right"></div>
-                                </div>
-                            ) : (
-                                <div className="word-stream-premium">
-                                    {/* Focus on current word with context */}
-                                    <div className="words-track">
-                                        {words.slice(Math.max(0, currentWordIndex - 2), currentWordIndex + 10).map((w, i) => {
-                                            const realIndex = Math.max(0, currentWordIndex - 2) + i;
-                                            const isCurrent = realIndex === currentWordIndex;
-                                            const isPast = realIndex < currentWordIndex;
+                        {/* Typing Area - Optimized */}
+                        <TypingArea
+                            mode={mode}
+                            words={words}
+                            currentWordIndex={currentWordIndex}
+                            inputValue={inputValue}
+                            fallingWords={fallingWords}
+                            scrollPos={scrollPos}
+                            aiProgress={aiProgress}
+                            config={config}
+                        />
 
-                                            return (
-                                                <div key={realIndex} className={`word-unit ${isCurrent ? 'active' : ''} ${isPast ? 'past' : ''}`}>
-                                                    {isCurrent ? (
-                                                        w.split('').map((char, idx) => {
-                                                            let status = 'pending';
-                                                            if (idx < inputValue.length) {
-                                                                status = inputValue[idx] === char ? 'correct' : 'incorrect';
-                                                            } else if (idx === inputValue.length) {
-                                                                status = 'caret';
-                                                            }
-                                                            return <span key={idx} className={`char ${status}`}>{char}</span>
-                                                        })
-                                                    ) : (
-                                                        w
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Keyboard */}
+                        {/* Keyboard - Memoized */}
                         {mode !== 'sentence' && (
                             <div className="keyboard-footer-wrapper">
-                                <InstructionalUI activeChar={nextChar} />
+                                <InstructionalUI activeChar={nextChar} difficulty={difficulty} language={language} />
                             </div>
                         )}
                     </>
                 )}
             </main>
         </div>
-
     );
 };
 

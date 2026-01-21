@@ -1,5 +1,5 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 
 const GAME_MODES = [
     {
@@ -7,42 +7,55 @@ const GAME_MODES = [
         title: 'Classic',
         description: 'Standard typing practice. Focus on accuracy and speed.',
         color: '#00f2ea',
-        levels: ['basic', 'intermediate', 'advanced']
+        levels: ['basic', 'intermediate', 'advanced'],
+        feature: 'classicGameMode'
     },
     {
         id: 'word-rain',
         title: 'Word Rain',
         description: 'Type falling words before they hit the bottom!',
         color: '#4facfe',
-        levels: ['basic', 'intermediate', 'advanced']
+        levels: ['basic', 'intermediate', 'advanced'],
+        feature: 'classicGameMode' // Included in basic/classic access
     },
     {
         id: 'sentence',
         title: 'Sentence',
         description: 'Practice with full sentences and punctuation.',
         color: '#43e97b',
-        levels: ['basic', 'intermediate', 'advanced']
+        levels: ['basic', 'intermediate', 'advanced'],
+        feature: 'sentenceTyping'
     },
     {
         id: 'survival',
         title: 'Survival',
         description: 'Don\'t make mistakes! Lives are limited.',
         color: '#ff0844',
-        levels: ['basic', 'intermediate', 'advanced']
+        levels: ['basic', 'intermediate', 'advanced'],
+        feature: 'survivalGameMode'
     },
     {
         id: 'race',
         title: 'Race',
         description: 'Compete against an AI opponent to the finish line.',
         color: '#fa709a',
-        levels: ['basic', 'intermediate', 'advanced']
+        levels: ['basic', 'intermediate', 'advanced'],
+        feature: 'typingRaceMode'
     }
 ];
 
 const Game = () => {
     const navigate = useNavigate();
+    const { hasFeature } = useContext(AuthContext);
 
     const handlePlayValue = (modeId, level) => {
+        const mode = GAME_MODES.find(m => m.id === modeId);
+        if (mode && mode.feature && !hasFeature(mode.feature)) {
+            if (confirm(`The ${mode.title} mode requires an upgrade. Go to pricing?`)) {
+                navigate('/pricing');
+            }
+            return;
+        }
         navigate(`/practice-session?mode=${modeId}&difficulty=${level}`);
     };
 
@@ -67,7 +80,7 @@ const Game = () => {
                 onMouseOver={(e) => e.currentTarget.style.color = 'var(--primary)'}
                 onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
                 title="Back to Home"
-                
+
             >
                 <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -106,42 +119,48 @@ const Game = () => {
                         <p style={{ color: 'var(--text-muted)', marginBottom: '2rem', minHeight: '3rem' }}>{mode.description}</p>
 
                         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: 'auto' }}>
-                            {mode.levels.map(level => (
-                                <button
-                                    key={level}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handlePlayValue(mode.id, level);
-                                    }}
-                                    className="btn"
-                                    style={{
-                                        flex: 1,
-                                        padding: '0.5rem',
-                                        fontSize: '0.85rem',
-                                        background: 'transparent',
-                                        color: mode.color,
-                                        border: `1px solid ${mode.color}`,
-                                        borderRadius: '8px',
-                                        textTransform: 'capitalize',
-                                        whiteSpace: 'nowrap',
-                                        cursor: 'pointer',
-                                        opacity: 0.8,
-                                        transition: 'all 0.2s'
-                                    }}
-                                    onMouseEnter={(e) => {
-                                        e.target.style.background = mode.color;
-                                        e.target.style.color = '#000';
-                                        e.target.style.opacity = '1';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.target.style.background = 'transparent';
-                                        e.target.style.color = mode.color;
-                                        e.target.style.opacity = '0.8';
-                                    }}
-                                >
-                                    {level}
-                                </button>
-                            ))}
+                            {mode.levels.map(level => {
+                                const modeLocked = mode.feature && !hasFeature(mode.feature);
+                                return (
+                                    <button
+                                        key={level}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handlePlayValue(mode.id, level);
+                                        }}
+                                        className="btn"
+                                        style={{
+                                            flex: 1,
+                                            padding: '0.5rem',
+                                            fontSize: '0.85rem',
+                                            background: 'transparent',
+                                            color: modeLocked ? '#555' : mode.color,
+                                            border: `1px solid ${modeLocked ? '#333' : mode.color}`,
+                                            borderRadius: '8px',
+                                            textTransform: 'capitalize',
+                                            whiteSpace: 'nowrap',
+                                            cursor: modeLocked ? 'not-allowed' : 'pointer',
+                                            opacity: modeLocked ? 0.5 : 0.8,
+                                            transition: 'all 0.2s'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            if (modeLocked) return;
+                                            e.target.style.background = mode.color;
+                                            e.target.style.color = '#000';
+                                            e.target.style.opacity = '1';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            if (modeLocked) return;
+                                            e.target.style.background = 'transparent';
+                                            e.target.style.color = mode.color;
+                                            e.target.style.opacity = '0.8';
+                                        }}
+                                    >
+                                        {modeLocked && <span style={{ marginRight: '4px' }}>🔒</span>}
+                                        {level}
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
                 ))}
