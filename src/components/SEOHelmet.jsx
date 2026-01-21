@@ -1,12 +1,11 @@
 import React from 'react';
-import { Helmet } from 'react-helmet-async';
 
 const SEOHelmet = ({ title, description, keywords, url }) => {
     const siteTitle = 'KeySkill';
     const fullTitle = title ? `${title} | ${siteTitle}` : siteTitle;
 
     return (
-        <Helmet>
+        <>
             <title>{fullTitle}</title>
             <meta name="description" content={description || 'Practice online typing exams for Indian government jobs. Improve speed and accuracy.'} />
             <meta name="keywords" content={keywords || 'typing test, typing exam, government typing, ssc typing, delhi police typing, hindi typing'} />
@@ -24,7 +23,7 @@ const SEOHelmet = ({ title, description, keywords, url }) => {
             <meta property="twitter:description" content={description} />
 
             <link rel="canonical" href={url || window.location.href} />
-        </Helmet>
+        </>
     );
 };
 
