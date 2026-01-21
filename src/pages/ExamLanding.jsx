@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Clock, FileText, Play, CheckCircle, Lock } from 'lucide-react';
-import SEOHelmet from '../components/SEOHelmet';
+
 import { AuthContext } from '../context/AuthContext';
 
 const ExamLanding = () => {
@@ -44,11 +44,7 @@ const ExamLanding = () => {
 
     return (
         <div className="min-h-screen bg-[#0a0a0c] text-secondary font-mono">
-            <SEOHelmet
-                title={exam.metaTitle || exam.title}
-                description={exam.metaDescription || `Practice ${exam.title} online. Improve typing speed for this exam.`}
-                url={window.location.href}
-            />
+
 
             <div className="container mx-auto px-6 py-12">
                 {/* Header Section */}
