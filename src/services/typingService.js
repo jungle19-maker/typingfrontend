@@ -54,3 +54,38 @@ export const fetchParagraphs = async (difficulty = 'basic') => {
     if (data) cache.set(key, data);
     return data;
 };
+
+export const fetchHindiWords = async (count = 50) => {
+    const key = `hindi-words-${count}`;
+    if (cache.has(key)) return [...cache.get(key)];
+
+    try {
+        const response = await axios.get(`${API_URL}/api/typing/hindi/words`, { params: { limit: count } });
+        const data = response.data.data;
+        if (data && data.length > 0) cache.set(key, data);
+        return data;
+    } catch (error) {
+        console.error("Fetch Hindi Words Error:", error);
+        return [];
+    }
+};
+
+export const fetchHindiSentences = async (count = 10) => {
+    try {
+        const response = await axios.get(`${API_URL}/api/typing/hindi/sentences`, { params: { limit: count } });
+        return response.data.data;
+    } catch (error) {
+        console.error("Fetch Hindi Sentences Error:", error);
+        return [];
+    }
+};
+
+export const fetchHindiParagraphs = async (difficulty = 'basic') => {
+    try {
+        const response = await axios.get(`${API_URL}/api/typing/hindi/paragraphs`, { params: { difficulty } });
+        return response.data.data;
+    } catch (error) {
+        console.error("Fetch Hindi Paragraphs Error:", error);
+        return [];
+    }
+};
