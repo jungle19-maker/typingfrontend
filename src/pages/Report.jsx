@@ -117,8 +117,8 @@ const Report = () => {
             const headers = { Authorization: `Bearer ${token}` };
 
             const [practiceRes, examRes] = await Promise.all([
-                axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/results/history`, { headers }),
-                axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/exams/history`, { headers })
+                axios.get(`${import.meta.env.VITE_API_URL || 'https://typingbackend-kfoz.onrender.com'}/api/results/history`, { headers }),
+                axios.get(`${import.meta.env.VITE_API_URL || 'https://typingbackend-kfoz.onrender.com'}/api/exams/history`, { headers })
             ]);
 
             // Normalize Exam Data to match Practice Data structure for merging

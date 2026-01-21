@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 
 const ResultPanel = ({ stats, rank, maxCombo, onRetry }) => {
     const navigate = useNavigate();
-
     // Rank Colors
     const rankColors = {
         'Bronze': '#cd7f32',

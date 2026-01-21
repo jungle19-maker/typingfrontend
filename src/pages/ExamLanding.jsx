@@ -17,7 +17,7 @@ const ExamLanding = () => {
         const fetchExam = async () => {
             try {
                 // Fetch by slug
-                const { data } = await axios.get(`http://localhost:5000/api/exams/slug/${slug}`);
+                const { data } = await axios.get(`https://typingbackend-kfoz.onrender.com/api/exams/slug/${slug}`);
                 setExam(data);
             } catch (err) {
                 console.error(err);

@@ -20,7 +20,7 @@ const Pricing = () => {
         const fetchPlans = async () => {
             try {
                 // Public endpoint
-                const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/plans`);
+                const res = await axios.get(`${import.meta.env.VITE_API_URL || 'https://typingbackend-kfoz.onrender.com'}/api/auth/plans`);
                 if (res.data.status === 'success') {
                     // Enrich plans with some UI specific properties if needed, 
                     // though backend should send mostly what we need.
@@ -60,7 +60,7 @@ const Pricing = () => {
         setProcessing(planId);
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/upgrade`,
+            const res = await axios.post(`${import.meta.env.VITE_API_URL || 'https://typingbackend-kfoz.onrender.com'}/api/auth/upgrade`,
                 { plan: planId },
                 { headers: { Authorization: `Bearer ${token}` } }
             );

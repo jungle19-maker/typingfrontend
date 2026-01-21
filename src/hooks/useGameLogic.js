@@ -558,7 +558,7 @@ export const useGameLogic = (gameMode, difficulty = 'beginner', language = 'engl
                 try {
                     // Calculate WPM for Rain: (chars / 5) / (minutes)
                     const wpm = Math.round((stats.correctChars / 5) / (Math.max(time, 1) / 60) || 0);
-                    await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/results`, {
+                    await axios.post(`${import.meta.env.VITE_API_URL || 'https://typingbackend-kfoz.onrender.com'}/api/results`, {
                         gameType: config.current.type,
                         wpm,
                         accuracy: stats.totalChars > 0 ? Math.round((stats.correctChars / stats.totalChars) * 100) : 100,

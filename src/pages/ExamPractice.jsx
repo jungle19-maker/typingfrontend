@@ -35,7 +35,7 @@ const ExamPractice = () => {
                 }
 
                 const config = { headers: { Authorization: `Bearer ${token}` } };
-                const { data } = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/exams/${id}`, config);
+                const { data } = await axios.get(`${import.meta.env.VITE_API_URL || 'https://typingbackend-kfoz.onrender.com'}/api/exams/${id}`, config);
 
                 setExam(data);
                 // setWordArray(data.content.split(' '));
@@ -121,7 +121,7 @@ const ExamPractice = () => {
                 backspaceCount: 0 // Not tracked in simple version
             };
 
-            await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/exams/${id}/submit`, resultData, config);
+            await axios.post(`${import.meta.env.VITE_API_URL || 'https://typingbackend-kfoz.onrender.com'}/api/exams/${id}/submit`, resultData, config);
         } catch (err) {
             console.error('Failed to submit results', err);
         }
