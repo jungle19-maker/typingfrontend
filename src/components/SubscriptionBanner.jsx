@@ -1,15 +1,15 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { AlertCircle, Crown, Clock } from 'lucide-react';
 
 const SubscriptionBanner = () => {
-    const { user } = useContext(AuthContext);
+    const { user } = useAuth();
     const navigate = useNavigate();
 
     if (!user || !user.subscription) return null;
 
-    const { status, expiryDate, planName } = user.subscription;
+    const { status, expiryDate } = user.subscription;
 
     // Helper to calculate days left
     const getDaysLeft = () => {

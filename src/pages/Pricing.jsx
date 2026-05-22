@@ -1,10 +1,10 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { AuthContext } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 
 const Pricing = () => {
-    const { user, setUser } = useContext(AuthContext);
+    const { user, setUser } = useAuth();
     const navigate = useNavigate();
     const [processing, setProcessing] = useState(null);
     const [plans, setPlans] = useState([]);

@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { AuthContext } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { useLanguage } from '../context/LanguageContext';
 import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
@@ -9,7 +9,7 @@ import { Lock, Unlock, Clock, AlertCircle } from 'lucide-react';
 const Exams = () => {
     const [exams, setExams] = useState([]);
     const [loading, setLoading] = useState(true);
-    const { user, hasFeature } = useContext(AuthContext);
+    const { user, hasFeature } = useAuth();
     const { language } = useLanguage();
     const navigate = useNavigate();
 

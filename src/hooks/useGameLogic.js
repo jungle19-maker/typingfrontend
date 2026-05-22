@@ -25,7 +25,6 @@ export const useGameLogic = (gameMode, difficulty = 'beginner', language = 'engl
 
     // --- Scrolling Sentence State ---
     const [scrollPos, setScrollPos] = useState(0); // in pixels
-    const [scrollSpeed, setScrollSpeed] = useState(0); // pixels per frame
 
     // Refs
     const config = useRef({
@@ -63,7 +62,6 @@ export const useGameLogic = (gameMode, difficulty = 'beginner', language = 'engl
     const setupConfig = (mode, diff) => {
         const difficulty = diff || 'beginner';
         const isBeginner = difficulty === 'beginner' || difficulty === 'basic';
-        const isIntermediate = difficulty === 'intermediate';
         const isAdvanced = difficulty === 'advanced';
 
         const baseConfig = {
@@ -150,7 +148,7 @@ export const useGameLogic = (gameMode, difficulty = 'beginner', language = 'engl
                     const paragraphs = await fetchParagraphs(difficulty);
                     if (paragraphs && paragraphs.length > 0) {
                         const text = paragraphs.map(p => p.content).join(' ');
-                        data = text.match(/[^\.!\?]+[\.!\?]+/g) || [text];
+                        data = text.match(/[^.!?]+[.!?]+/g) || [text];
                         data = data.map(s => s.trim());
                     }
                 } else {
@@ -474,7 +472,6 @@ export const useGameLogic = (gameMode, difficulty = 'beginner', language = 'engl
             // Use REF for inputValue to avoid stale closure
             const CHAR_WIDTH = 25; // Conservative estimate
             const charOffset = inputValueRef.current.length * CHAR_WIDTH;
-            const buffer = 300; // Allow 300px of text to be visible before cursor
 
             // If ScrollPos is significantly larger than CharOffset, it means the text has moved Left fast
             // and the cursor (CharOffset) hasn't kept up.
@@ -483,8 +480,6 @@ export const useGameLogic = (gameMode, difficulty = 'beginner', language = 'engl
             // If (ScrollPos - CharOffset) > Limit? 
             // Example: ScrollPos=500, CharOffset=0. Text is -500px left. Cursor is at -500px. Bad.
             // We want pause if ScrollPos > CharOffset + SafeZone.
-
-            const maxScroll = charOffset + 600; // Allow sentence to flow up to 600px past "start" relative to typing
             // This logic is tricky without container width.
 
             // Simpler: Just limit relative speed? No.
@@ -507,7 +502,6 @@ export const useGameLogic = (gameMode, difficulty = 'beginner', language = 'engl
 
         // Reset Scroll state
         setScrollPos(0);
-        setScrollSpeed(config.current.initialSpeed || 1);
 
         // Classic Timer
         timerRef.current = setInterval(() => {
@@ -569,6 +563,7 @@ export const useGameLogic = (gameMode, difficulty = 'beginner', language = 'engl
             };
             save();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isGameOver]);
 
     // Helpers

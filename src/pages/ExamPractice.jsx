@@ -1,13 +1,13 @@
-import { useContext, useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { Timer, AlertTriangle, ChevronRight, Clock, Type, Minus, Plus } from 'lucide-react';
 
 const ExamPractice = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { user } = useContext(AuthContext);
+    const { user } = useAuth();
 
     const [exam, setExam] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -25,49 +25,23 @@ const ExamPractice = () => {
     const timerRef = useRef(null);
     // const [wordArray, setWordArray] = useState([]); // Removed unused state
 
-    useEffect(() => {
-        const fetchExam = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    navigate('/login');
-                    return;
-                }
+    const submitResults = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const config = { headers: { Authorization: `Bearer ${token}` } };
 
-                const config = { headers: { Authorization: `Bearer ${token}` } };
-                const { data } = await axios.get(`${import.meta.env.VITE_API_URL || 'https://typingbackend-kfoz.onrender.com'}/api/exams/${id}`, config);
+            const resultData = {
+                wpm: stats.wpm,
+                accuracy: stats.accuracy,
+                errorCount: stats.errorCount,
+                keyStrokes: userInput.length,
+                backspaceCount: 0 // Not tracked in simple version
+            };
 
-                setExam(data);
-                // setWordArray(data.content.split(' '));
-                setTimeLeft(data.duration);
-                setLoading(false);
-                if (data.language === 'hindi') setFontSize(22);
-            } catch (err) {
-                setError(err.response?.data?.message || 'Failed to load exam');
-                setLoading(false);
-            }
-        };
-        fetchExam();
-    }, [id, navigate]);
-
-    useEffect(() => {
-        if (started && timeLeft > 0 && !finished) {
-            timerRef.current = setInterval(() => {
-                setTimeLeft((prev) => {
-                    if (prev <= 1) {
-                        endExam();
-                        return 0;
-                    }
-                    return prev - 1;
-                });
-            }, 1000);
+            await axios.post(`${import.meta.env.VITE_API_URL || 'https://typingbackend-kfoz.onrender.com'}/api/exams/${id}/submit`, resultData, config);
+        } catch (err) {
+            console.error('Failed to submit results', err);
         }
-        return () => clearInterval(timerRef.current);
-    }, [started, timeLeft, finished]);
-
-    const startExam = () => {
-        setStarted(true);
-        setTimeout(() => inputRef.current?.focus(), 100);
     };
 
     const endExam = async () => {
@@ -108,23 +82,9 @@ const ExamPractice = () => {
         }
     };
 
-    const submitResults = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const config = { headers: { Authorization: `Bearer ${token}` } };
-
-            const resultData = {
-                wpm: stats.wpm,
-                accuracy: stats.accuracy,
-                errorCount: stats.errorCount,
-                keyStrokes: userInput.length,
-                backspaceCount: 0 // Not tracked in simple version
-            };
-
-            await axios.post(`${import.meta.env.VITE_API_URL || 'https://typingbackend-kfoz.onrender.com'}/api/exams/${id}/submit`, resultData, config);
-        } catch (err) {
-            console.error('Failed to submit results', err);
-        }
+    const startExam = () => {
+        setStarted(true);
+        setTimeout(() => inputRef.current?.focus(), 100);
     };
 
     // Prevent Paste
@@ -136,6 +96,47 @@ const ExamPractice = () => {
     const changeFontSize = (delta) => {
         setFontSize(prev => Math.max(12, Math.min(32, prev + delta)));
     };
+
+    useEffect(() => {
+        const fetchExam = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    navigate('/login');
+                    return;
+                }
+
+                const config = { headers: { Authorization: `Bearer ${token}` } };
+                const { data } = await axios.get(`${import.meta.env.VITE_API_URL || 'https://typingbackend-kfoz.onrender.com'}/api/exams/${id}`, config);
+
+                setExam(data);
+                // setWordArray(data.content.split(' '));
+                setTimeLeft(data.duration);
+                setLoading(false);
+                if (data.language === 'hindi') setFontSize(22);
+            } catch (err) {
+                setError(err.response?.data?.message || 'Failed to load exam');
+                setLoading(false);
+            }
+        };
+        fetchExam();
+    }, [id, navigate]);
+
+    useEffect(() => {
+        if (started && timeLeft > 0 && !finished) {
+            timerRef.current = setInterval(() => {
+                setTimeLeft((prev) => {
+                    if (prev <= 1) {
+                        endExam();
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+        }
+        return () => clearInterval(timerRef.current);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [started, timeLeft, finished]);
 
     if (loading) return <div className="text-white text-center mt-20">Loading Exam Environment...</div>;
     if (error) return <div className="text-red-500 text-center mt-20"><AlertTriangle className="mx-auto mb-2" />{error}</div>;

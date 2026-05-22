@@ -1,6 +1,5 @@
-import { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 
 const GAME_MODES = [
     {
@@ -47,7 +46,7 @@ const GAME_MODES = [
 
 const Game = () => {
     const navigate = useNavigate();
-    const { hasFeature } = useContext(AuthContext);
+    const { hasFeature } = useAuth();
 
     const handlePlayValue = (modeId, level) => {
         const mode = GAME_MODES.find(m => m.id === modeId);

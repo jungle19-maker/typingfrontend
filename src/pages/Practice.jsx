@@ -1,6 +1,6 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { useLanguage } from '../context/LanguageContext';
 import InstructionalUI from '../components/InstructionalUI';
 
@@ -41,18 +41,10 @@ const MODULES = [
 
 const Practice = () => {
     const navigate = useNavigate();
-    const { user, hasFeature } = useContext(AuthContext);
+    const { hasFeature } = useAuth();
     const { language } = useLanguage();
 
-    const checkAccess = (module, difficulty) => {
-        // Feature Mapping
-        const featureMap = {
-            'practice-2-letter': 'englishPractice',
-            'practice-3-letter': 'englishPractice',
-            'practice-capital': 'capitalLetterPractice',
-            'practice-paragraph': 'englishPractice' // Paragraph is tricky, usually Pro?
-        };
-
+    const checkAccess = (module) => {
         // Specific overrides for the prompt's source of truth
         if (module.id === 'practice-capital') return hasFeature('capitalLetterPractice');
         if (module.id === 'practice-paragraph') {
@@ -70,7 +62,7 @@ const Practice = () => {
 
     const handleStart = (moduleId, diff) => {
         const module = MODULES.find(m => m.id === moduleId);
-        if (checkAccess(module, diff)) {
+        if (checkAccess(module)) {
             navigate(`/practice-session?mode=${moduleId}&difficulty=${diff}`);
         } else {
             // Show lock / upgrade prompt
@@ -148,7 +140,7 @@ const Practice = () => {
 
                         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                             {['basic', 'intermediate', 'advanced'].map(diff => {
-                                const locked = !checkAccess(module, diff);
+                                const locked = !checkAccess(module);
                                 return (
                                     <button
                                         key={diff}

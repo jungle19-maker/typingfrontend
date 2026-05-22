@@ -1,11 +1,11 @@
-import { useState, useContext, useEffect } from 'react';
-import { AuthContext } from '../context/AuthContext';
+import { useState, useEffect } from 'react';
+import { useAuth } from '../hooks/useAuth';
 import { useNavigate, Link } from 'react-router-dom';
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const { login, user } = useContext(AuthContext);
+    const { login, user } = useAuth();
     const navigate = useNavigate();
     const [error, setError] = useState('');
     const [showPassword, setShowPassword] = useState(false);

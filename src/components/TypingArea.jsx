@@ -1,7 +1,7 @@
 import React, { memo } from 'react';
 import '../App.css'; // Ensure styles are available
 
-const TypingArea = memo(({ mode, words, currentWordIndex, inputValue, fallingWords, scrollPos, aiProgress, config }) => {
+const TypingArea = memo(({ mode, words, currentWordIndex, inputValue, fallingWords, scrollPos }) => {
 
     // Memoized sub-renders could be here if needed, but the whole component is memoized
     // which serves the main purpose of isolating it from Timer updates in parent.

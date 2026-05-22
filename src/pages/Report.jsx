@@ -1,5 +1,5 @@
-import { useEffect, useState, useContext, useCallback } from 'react';
-import { AuthContext } from '../context/AuthContext';
+import { useEffect, useState, useCallback } from 'react';
+import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import FeatureGuard from '../components/FeatureGuard';
 import axios from 'axios';
@@ -9,27 +9,48 @@ import {
 import ExamReports from '../components/ExamReports';
 
 
-const StatCard = ({ title, value, subtext, icon, color }) => (
-    <div className="bg-white/5 border border-white/10 p-6 rounded-2xl backdrop-blur-sm hover:translate-y-[-2px] transition-transform">
-        <div className="flex justify-between items-start mb-4">
-            <div>
-                <h3 className="text-gray-400 text-sm font-medium">{title}</h3>
-                <div className="text-3xl font-bold mt-1 text-white">{value}</div>
+const colorClasses = {
+    cyan: {
+        bg: 'bg-cyan-500/20',
+        text: 'text-cyan-400'
+    },
+    emerald: {
+        bg: 'bg-emerald-500/20',
+        text: 'text-emerald-400'
+    },
+    purple: {
+        bg: 'bg-purple-500/20',
+        text: 'text-purple-400'
+    },
+    orange: {
+        bg: 'bg-orange-500/20',
+        text: 'text-orange-400'
+    }
+};
+
+const StatCard = ({ title, value, subtext, icon, color }) => {
+    const classes = colorClasses[color] || { bg: 'bg-gray-500/20', text: 'text-gray-400' };
+    return (
+        <div className="bg-white/5 border border-white/10 p-6 rounded-2xl backdrop-blur-sm hover:translate-y-[-2px] transition-transform">
+            <div className="flex justify-between items-start mb-4">
+                <div>
+                    <h3 className="text-gray-400 text-sm font-medium">{title}</h3>
+                    <div className="text-3xl font-bold mt-1 text-white">{value}</div>
+                </div>
+                <div className={`p-3 rounded-lg ${classes.bg} ${classes.text}`}>
+                    {icon}
+                </div>
             </div>
-            <div className={`p-3 rounded-lg bg-${color}-500/20 text-${color}-400`}>
-                {icon}
-            </div>
+            {subtext && <div className="text-xs text-gray-400 flex items-center gap-1">
+                {subtext}
+            </div>}
         </div>
-        {subtext && <div className="text-xs text-gray-400 flex items-center gap-1">
-            {subtext}
-        </div>}
-    </div>
-);
+    );
+};
 
 const Report = () => {
-    const { user, loading, hasFeature } = useContext(AuthContext);
+    const { user, loading } = useAuth();
     const navigate = useNavigate();
-    const [timeRange, setTimeRange] = useState('all'); // 'all' for now, filtering logic can be added later
 
     // Real Data States
     const [stats, setStats] = useState({ wpm: 0, acc: 0, games: 0, mistakes: 0 });
@@ -142,7 +163,10 @@ const Report = () => {
 
     useEffect(() => {
         if (!loading && !user) navigate('/login');
-        if (user) fetchData();
+        if (user) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            fetchData();
+        }
     }, [user, loading, navigate, fetchData]);
 
     if (isLoadingData) {

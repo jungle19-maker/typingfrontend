@@ -1,17 +1,15 @@
 import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
-import { useContext } from 'react';
-import { AuthContext } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { useLanguage } from '../context/LanguageContext';
 
 const Navbar = () => {
-    const { user, logout } = useContext(AuthContext);
+    const { user, logout } = useAuth();
     const { language, toggleLanguage } = useLanguage();
     const location = useLocation();
     const navigate = useNavigate();
 
     // Check if user is on a paid plan
     const planName = (user?.subscription?.planName || 'free').toLowerCase();
-    const subStatus = user?.subscription?.status || 'active'; // Default to active if status is missing but user exists
     const isPaidUser = planName !== 'free';
     const showUpgrade = planName === 'free';
 
