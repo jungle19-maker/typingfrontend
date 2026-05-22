@@ -1,7 +1,6 @@
 import React, { useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { useContext } from 'react';
-import { AuthContext } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { useGameLogic } from '../hooks/useGameLogic';
 import { useLanguage } from '../context/LanguageContext';
 import InstructionalUI from '../components/InstructionalUI';
@@ -14,7 +13,7 @@ const PracticeSession = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const { language } = useLanguage();
-    const { hasFeature, user, loading: authLoading } = useContext(AuthContext); // Get auth context
+    const { hasFeature, loading: authLoading } = useAuth(); // Get auth context
 
     const mode = searchParams.get('mode') || 'classic';
     const difficulty = searchParams.get('difficulty') || 'beginner';
@@ -136,7 +135,6 @@ const PracticeSession = () => {
                             onBlur={(e) => { e.target.focus(); }} // Aggressive focus keep
                         />
 
-                        {/* Typing Area - Optimized */}
                         <TypingArea
                             mode={mode}
                             words={words}
@@ -144,8 +142,6 @@ const PracticeSession = () => {
                             inputValue={inputValue}
                             fallingWords={fallingWords}
                             scrollPos={scrollPos}
-                            aiProgress={aiProgress}
-                            config={config}
                         />
 
                         {/* Keyboard - Memoized */}

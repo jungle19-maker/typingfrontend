@@ -1,7 +1,6 @@
 import { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { LanguageProvider } from './context/LanguageContext';
-import { AuthProvider } from './context/AuthContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import Navbar from './components/Navbar';
 import PublicRoute from './components/PublicRoute';
@@ -48,27 +47,25 @@ function App() {
     <ErrorBoundary>
       <Router>
         <LanguageProvider>
-          <AuthProvider>
-            <div className="app-container">
-              <Layout>
-                <Suspense fallback={<LoadingScreen />}>
-                  <Routes>
-                    <Route path="/" element={<Navigate to="/practice" replace />} />
-                    <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-                    <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
-                    <Route path="/report" element={<ProtectedRoute allowExpired={true}><Report /></ProtectedRoute>} />
-                    <Route path="/practice" element={<ProtectedRoute><Practice /></ProtectedRoute>} />
-                    <Route path="/practice-session" element={<ProtectedRoute><PracticeSession /></ProtectedRoute>} />
-                    <Route path="/game" element={<ProtectedRoute><Game /></ProtectedRoute>} />
-                    <Route path="/pricing" element={<ProtectedRoute allowExpired={true}><Pricing /></ProtectedRoute>} />
-                    <Route path="/typing-exams" element={<ProtectedRoute><Exams /></ProtectedRoute>} />
-                    <Route path="/typing-exams/:slug" element={<ProtectedRoute><ExamLanding /></ProtectedRoute>} />
-                    <Route path="/exams/:id" element={<ProtectedRoute><ExamPractice /></ProtectedRoute>} />
-                  </Routes>
-                </Suspense>
-              </Layout>
-            </div>
-          </AuthProvider>
+          <div className="app-container">
+            <Layout>
+              <Suspense fallback={<LoadingScreen />}>
+                <Routes>
+                  <Route path="/" element={<Navigate to="/practice" replace />} />
+                  <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+                  <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+                  <Route path="/report" element={<ProtectedRoute allowExpired={true}><Report /></ProtectedRoute>} />
+                  <Route path="/practice" element={<ProtectedRoute><Practice /></ProtectedRoute>} />
+                  <Route path="/practice-session" element={<ProtectedRoute><PracticeSession /></ProtectedRoute>} />
+                  <Route path="/game" element={<ProtectedRoute><Game /></ProtectedRoute>} />
+                  <Route path="/pricing" element={<ProtectedRoute allowExpired={true}><Pricing /></ProtectedRoute>} />
+                  <Route path="/typing-exams" element={<ProtectedRoute><Exams /></ProtectedRoute>} />
+                  <Route path="/typing-exams/:slug" element={<ProtectedRoute><ExamLanding /></ProtectedRoute>} />
+                  <Route path="/exams/:id" element={<ProtectedRoute><ExamPractice /></ProtectedRoute>} />
+                </Routes>
+              </Suspense>
+            </Layout>
+          </div>
         </LanguageProvider>
       </Router>
     </ErrorBoundary>

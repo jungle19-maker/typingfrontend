@@ -1,10 +1,9 @@
 import React from 'react';
-import { useContext } from 'react';
-import { AuthContext } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { Link } from 'react-router-dom';
 
 const FeatureGuard = ({ feature, children, fallback = null, showUpgrade = false }) => {
-    const { user, hasFeature } = useContext(AuthContext);
+    const { hasFeature } = useAuth();
 
     if (hasFeature(feature)) {
         return <>{children}</>;

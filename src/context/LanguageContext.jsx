@@ -2,7 +2,9 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const LanguageContext = createContext();
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useLanguage = () => useContext(LanguageContext);
+
 
 export const LanguageProvider = ({ children }) => {
     // Default to English, could check localStorage
